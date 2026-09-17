@@ -13,11 +13,13 @@ export const PUBLIC_URL = "https://smart-garden-gitam.vercel.app";
 export function getBasePublicUrl() {
   const currentOrigin = window.location.origin.replace(/\/$/, "");
   
-  // If we are on a specialized AI Studio development domain, use the Vercel production URL
+  // To prevent 404s during testing, if you are scanning a code while 
+  // viewing the AI Studio preview, we can temporarily return the currentOrigin.
+  // However, for the final university markers, we stick to the Vercel URL.
   if (currentOrigin.includes("ais-dev-") || currentOrigin.includes("ais-pre-")) {
+    // If you want to test scans on the AI Studio preview, change this to: return currentOrigin;
     return PUBLIC_URL;
   }
   
-  // Otherwise, use the custom production URL as the primary target
   return PUBLIC_URL;
 }
