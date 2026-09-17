@@ -1,0 +1,6 @@
+{
+  "name": "Smart Garden",
+  "description": "A premium digital botanical garden guide with interactive plant markers, QR code integration, and AI-powered plant identification.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

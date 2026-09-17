@@ -1,0 +1,133 @@
+{
+  "entities": {
+    "Garden": {
+      "title": "Garden",
+      "description": "A top-level garden or park entity.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "displayOrder": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "code", "status"]
+    },
+    "GardenArea": {
+      "title": "Garden Area",
+      "description": "A specific zone within a garden.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gardenId": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "displayOrder": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "gardenId", "name", "code", "status"]
+    },
+    "Plant": {
+      "title": "Plant",
+      "description": "A botanical species entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "commonName": { "type": "string" },
+        "botanicalName": { "type": "string" },
+        "scientificName": { "type": "string" },
+        "family": { "type": "string" },
+        "shortDescription": { "type": "string" },
+        "description": { "type": "string" },
+        "benefits": { "type": "string" },
+        "careInstructions": { "type": "string" },
+        "sunlightRequirement": { "type": "string", "enum": ["low", "partial", "full sun"] },
+        "waterRequirement": { "type": "string", "enum": ["low", "moderate", "high"] },
+        "soilType": { "type": "string" },
+        "temperature": { "type": "string" },
+        "humidity": { "type": "string" },
+        "averageHeight": { "type": "string" },
+        "growthRate": { "type": "string" },
+        "floweringSeason": { "type": "string" },
+        "nativeRegion": { "type": "string" },
+        "primaryImage": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "categoryId", "commonName", "botanicalName", "status"]
+    },
+    "PlantCategory": {
+      "title": "Plant Category",
+      "description": "A category for grouping plants.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "color": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "PlantMarker": {
+      "title": "Plant Marker",
+      "description": "A location marker for a plant in an area.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "areaId": { "type": "string" },
+        "plantId": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "label": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] }
+      },
+      "required": ["id", "areaId", "plantId", "x", "y", "status"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "An administrative user record.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["super_admin", "manager"] }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/gardens/{gardenId}": {
+      "schema": "Garden",
+      "description": "Collection of all gardens."
+    },
+    "/areas/{areaId}": {
+      "schema": "GardenArea",
+      "description": "Collection of all garden areas."
+    },
+    "/plants/{plantId}": {
+      "schema": "Plant",
+      "description": "Collection of all botanical species."
+    },
+    "/categories/{categoryId}": {
+      "schema": "PlantCategory",
+      "description": "Collection of plant categories."
+    },
+    "/markers/{markerId}": {
+      "schema": "PlantMarker",
+      "description": "Collection of plant location markers."
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Collection of authorized administrative users."
+    }
+  }
+}
