@@ -25,6 +25,7 @@ import { subscribeToAreas, deleteArea, saveArea, getGardenById } from '../../lib
 import { db } from '../../lib/firebase';
 import { writeBatch, doc } from 'firebase/firestore';
 import AreaModal from '../../components/admin/AreaModal';
+import { getBasePublicUrl } from '../../constants';
 
 export default function AdminAreas() {
   const { gardenId } = useParams<{ gardenId: string }>();
@@ -118,15 +119,10 @@ export default function AdminAreas() {
   };
 
   const handleGetQR = (area: GardenArea) => {
-    // Intelligent Domain Switching to ensure QR codes always point to the public site
-    const currentOrigin = window.location.origin;
-    let baseUrl = currentOrigin;
-    if (currentOrigin.includes('ais-dev-')) {
-      baseUrl = currentOrigin.replace('ais-dev-', 'ais-pre-');
-    }
-    
+    // Use central public URL for all QR codes
+    const baseUrl = getBasePublicUrl();
     const publicUrl = `${baseUrl}/scan/${area.code}`;
-    window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}`, '_blank');
+    window.open(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(publicUrl)}`, '_blank');
     toast.success(`QR Code generated for ${area.name}`);
   };
 

@@ -77,7 +77,11 @@ export default function AreaPage() {
 
   // Find the current area based on params
   const area = qrCode 
-    ? areas.find(a => a.code?.trim().toLowerCase() === qrCode.trim().toLowerCase()) 
+    ? areas.find(a => {
+        const normalizedCode = a.code?.trim().toLowerCase();
+        const normalizedParam = qrCode.trim().toLowerCase().replace(/\/$/, '');
+        return normalizedCode === normalizedParam;
+      }) 
     : areas.find(a => a.id === areaId);
   
   const garden = gardens.find((g) => g.id === (area?.gardenId || gardenId));

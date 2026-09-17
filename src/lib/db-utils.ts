@@ -120,9 +120,11 @@ export async function getCategories(): Promise<PlantCategory[]> {
 }
 
 export function subscribeToCategories(callback: (categories: PlantCategory[]) => void) {
-  const q = query(collection(db, collections.CATEGORIES), orderBy('name', 'asc'));
+  const q = query(collection(db, collections.CATEGORIES));
   return onSnapshot(q, (snapshot) => {
     const categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlantCategory));
+    // Sort in memory for consistency
+    categories.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     callback(categories);
   }, (error) => {
     handleFirestoreError(error, OperationType.LIST, collections.CATEGORIES);
@@ -166,9 +168,10 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export async function getGardens(): Promise<any[]> {
   try {
-    const q = query(collection(db, collections.GARDENS), orderBy('displayOrder', 'asc'));
+    const q = query(collection(db, collections.GARDENS));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const gardens = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return gardens.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, collections.GARDENS);
     return [];
@@ -177,9 +180,12 @@ export async function getGardens(): Promise<any[]> {
 
 export async function getAreas(gardenId?: string): Promise<GardenArea[]> {
   try {
-    const q = query(collection(db, collections.AREAS), orderBy('displayOrder', 'asc'));
+    const q = query(collection(db, collections.AREAS));
     const snapshot = await getDocs(q);
     let areas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GardenArea));
+    
+    areas.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    
     if (gardenId) {
       areas = areas.filter(a => a.gardenId === gardenId);
     }
@@ -191,9 +197,13 @@ export async function getAreas(gardenId?: string): Promise<GardenArea[]> {
 }
 
 export function subscribeToAreas(gardenId: string | undefined, callback: (areas: GardenArea[]) => void) {
-  const q = query(collection(db, collections.AREAS), orderBy('displayOrder', 'asc'));
+  const q = query(collection(db, collections.AREAS));
   return onSnapshot(q, (snapshot) => {
     let areas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GardenArea));
+    
+    // Sort in memory to ensure all documents are included even if they lack displayOrder
+    areas.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    
     if (gardenId) {
       areas = areas.filter(a => a.gardenId === gardenId);
     }
@@ -268,9 +278,11 @@ export async function getGardenById(id: string): Promise<any | null> {
 }
 
 export function subscribeToGardens(callback: (gardens: any[]) => void) {
-  const q = query(collection(db, collections.GARDENS), orderBy('displayOrder', 'asc'));
+  const q = query(collection(db, collections.GARDENS));
   return onSnapshot(q, (snapshot) => {
     const gardens = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Sort in memory to avoid missing documents lacking displayOrder
+    gardens.sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0));
     callback(gardens);
   }, (error) => {
     handleFirestoreError(error, OperationType.LIST, collections.GARDENS);

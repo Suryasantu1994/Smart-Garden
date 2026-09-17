@@ -5,22 +5,17 @@
 
 import express from "express";
 import path from "path";
-import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // API routes go here
+  // API routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Handle Vite middleware in development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -28,13 +23,14 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // In production, serve static files from dist/client
-    // Vite build by default puts assets in dist/
     const distPath = path.join(process.cwd(), "dist");
     
-    app.use(express.static(distPath));
+    // Serve static files with extensions first
+    app.use(express.static(distPath, {
+      index: false // Don't serve index.html automatically here
+    }));
 
-    // Handle SPA routing: serve index.html for all non-file requests
+    // For everything else, serve index.html
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });

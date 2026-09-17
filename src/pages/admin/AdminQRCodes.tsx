@@ -19,6 +19,7 @@ import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { subscribeToAreas, subscribeToGardens, subscribeToScans } from '../../lib/db-utils';
 import { GardenArea, Garden } from '../../types';
+import { getBasePublicUrl } from '../../constants';
 
 export default function AdminQRCodes() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,18 +48,8 @@ export default function AdminQRCodes() {
     const garden = gardens.find(g => g.id === area.gardenId);
     const areaScans = scans.filter(s => s.areaId === area.id).length;
     
-    // Use window.location.origin as the default, but ensure it's pointing to the correct structure
-    // This handles both development and production environments
-    const currentOrigin = window.location.origin;
-    
-    // Intelligent Domain Switching:
-    // If we are in the AI Studio Dev environment (ais-dev), we should point to the 
-    // AI Studio Public Preview environment (ais-pre) for a clean webpage experience.
-    let baseUrl = currentOrigin;
-    if (currentOrigin.includes('ais-dev-')) {
-      baseUrl = currentOrigin.replace('ais-dev-', 'ais-pre-');
-    }
-
+    // Use central public URL for all QR codes
+    const baseUrl = getBasePublicUrl();
     const scanUrl = `${baseUrl}/scan/${area.code}`;
 
     return {
