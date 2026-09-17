@@ -27,12 +27,20 @@ export default function AreaPage() {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [categories, setCategories] = useState<PlantCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedAreas, setHasLoadedAreas] = useState(false);
+  const [hasLoadedGardens, setHasLoadedGardens] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
     const unsubs = [
-      subscribeToGardens((data) => setGardens(data.length > 0 ? data : fallbackGardens as Garden[])),
-      subscribeToAreas(undefined, (data) => setAreas(data.length > 0 ? data : fallbackAreas as GardenArea[])),
+      subscribeToGardens((data) => {
+        setGardens(data.length > 0 ? data : fallbackGardens as Garden[]);
+        setHasLoadedGardens(true);
+      }),
+      subscribeToAreas(undefined, (data) => {
+        setAreas(data.length > 0 ? data : fallbackAreas as GardenArea[]);
+        setHasLoadedAreas(true);
+      }),
       subscribeToMarkers(undefined, (data) => {
         setMarkers(data);
       }),
@@ -53,23 +61,23 @@ export default function AreaPage() {
   }, []);
 
   useEffect(() => {
-    if (areas.length > 0 && gardens.length > 0) {
+    if (hasLoadedAreas && hasLoadedGardens) {
       setIsLoading(false);
       
       // Record QR scan if arriving via QR code
       if (qrCode && !recordedRef.current) {
-        const targetArea = areas.find(a => a.code === qrCode);
+        const targetArea = areas.find(a => a.code?.toLowerCase() === qrCode.toLowerCase());
         if (targetArea) {
           recordScan(targetArea.id, 'area');
           recordedRef.current = true;
         }
       }
     }
-  }, [areas, gardens, qrCode]);
+  }, [hasLoadedAreas, hasLoadedGardens, areas, gardens, qrCode]);
 
   // Find the current area based on params
   const area = qrCode 
-    ? areas.find(a => a.code === qrCode) 
+    ? areas.find(a => a.code?.trim().toLowerCase() === qrCode.trim().toLowerCase()) 
     : areas.find(a => a.id === areaId);
   
   const garden = gardens.find((g) => g.id === (area?.gardenId || gardenId));
@@ -80,7 +88,7 @@ export default function AreaPage() {
     setZoom(1);
   }, [area?.id]);
 
-  if (isLoading) {
+  if (isLoading || !hasLoadedAreas || !hasLoadedGardens) {
     return (
       <div className="pt-32 pb-24 min-h-screen flex flex-col items-center justify-center space-y-4">
         <RefreshCw className="animate-spin text-emerald-600" size={48} />
@@ -97,10 +105,23 @@ export default function AreaPage() {
             <Info size={40} />
           </div>
           <h2 className="text-2xl font-bold text-stone-900 mb-2">Garden Area Not Found</h2>
-          <p className="text-stone-500 mb-8">The QR code may be invalid or the garden area may no longer be available.</p>
-          <Link to="/" className="inline-block bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
-            Go to Smart Garden
-          </Link>
+          <p className="text-stone-500 mb-8">
+            {qrCode 
+              ? `We couldn't find a zone matching the code "${qrCode}". (Found ${areas.length} active areas).`
+              : 'The requested garden area may no longer be available.'
+            }
+          </p>
+          <div className="space-y-3">
+            <Link to="/" className="block w-full bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+              Go to Home Page
+            </Link>
+            <button 
+              onClick={() => window.location.reload()}
+              className="block w-full bg-stone-100 text-stone-600 px-8 py-3 rounded-xl font-bold hover:bg-stone-200 transition-colors"
+            >
+              Refresh Data
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -46,12 +46,27 @@ export default function AdminQRCodes() {
   const qrCodes = areas.map((area) => {
     const garden = gardens.find(g => g.id === area.gardenId);
     const areaScans = scans.filter(s => s.areaId === area.id).length;
+    
+    // Use window.location.origin as the default, but ensure it's pointing to the correct structure
+    // This handles both development and production environments
+    const currentOrigin = window.location.origin;
+    
+    // Intelligent Domain Switching:
+    // If we are in the AI Studio Dev environment (ais-dev), we should point to the 
+    // AI Studio Public Preview environment (ais-pre) for a clean webpage experience.
+    let baseUrl = currentOrigin;
+    if (currentOrigin.includes('ais-dev-')) {
+      baseUrl = currentOrigin.replace('ais-dev-', 'ais-pre-');
+    }
+
+    const scanUrl = `${baseUrl}/scan/${area.code}`;
+
     return {
       id: `qr-${area.id}`,
       areaName: area.name,
       gardenName: garden?.name || 'Unknown Garden',
       code: area.code,
-      url: `${window.location.origin}/scan/${area.code}`,
+      url: scanUrl,
       scans: areaScans,
       createdAt: area.createdAt ? new Date(area.createdAt).toLocaleDateString() : 'N/A'
     };
@@ -68,30 +83,48 @@ export default function AdminQRCodes() {
 
   const handleDownload = (id: string, name: string) => {
     const svg = document.querySelector(`#${id} svg`);
-    if (!svg) return;
+    if (!svg) {
+      toast.error('Could not find QR code element');
+      return;
+    }
     
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      const pngFile = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.download = `QR-${name.replace(/\s+/g, '-').toLowerCase()}.png`;
-      downloadLink.href = pngFile;
-      downloadLink.click();
-      toast.success(`QR Code for ${name} downloaded!`);
-    };
-    
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+    try {
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        canvas.width = img.width * 2; // Higher resolution
+        canvas.height = img.height * 2;
+        if (ctx) {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.scale(2, 2);
+          ctx.drawImage(img, 0, 0);
+        }
+        
+        const pngFile = canvas.toDataURL('image/png');
+        const downloadLink = document.createElement('a');
+        downloadLink.download = `QR-${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+        downloadLink.href = pngFile;
+        downloadLink.click();
+        URL.revokeObjectURL(url);
+        toast.success(`QR Code for ${name} downloaded!`);
+      };
+      
+      img.src = url;
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download QR code');
+    }
   };
 
   const handlePrint = (name: string) => {
-    toast.info(`Preparing print view for ${name}...`);
+    toast.info(`Preparing print view... Use your browser's print dialog.`);
     window.print();
   };
 
@@ -124,69 +157,88 @@ export default function AdminQRCodes() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {qrCodes.map((qr, idx) => (
-          <motion.div
-            key={qr.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
-            className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm group hover:shadow-xl hover:shadow-emerald-900/5 transition-all"
-          >
-            <div 
-              id={qr.id}
-              className="flex justify-center mb-8 bg-stone-50 p-8 rounded-3xl border border-stone-100 group-hover:bg-white group-hover:border-emerald-100 transition-all"
+      {qrCodes.length === 0 ? (
+        <div className="bg-white p-20 rounded-[3rem] border border-dashed border-stone-200 text-center">
+          <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center mx-auto mb-6 text-stone-300">
+            <QrIcon size={40} />
+          </div>
+          <h3 className="text-xl font-bold text-stone-900 mb-2">No QR Codes Found</h3>
+          <p className="text-stone-500 max-w-md mx-auto">
+            {searchQuery 
+              ? `We couldn't find any QR codes matching "${searchQuery}".` 
+              : "You haven't created any garden areas yet. Create an area first to generate its QR code."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {qrCodes.map((qr, idx) => (
+            <motion.div
+              key={qr.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm group hover:shadow-xl hover:shadow-emerald-900/5 transition-all"
             >
-              <div className="p-4 bg-white rounded-2xl shadow-xl shadow-stone-900/5">
-                <QRCodeSVG value={qr.url} size={150} level="H" includeMargin={true} />
+              <div 
+                id={qr.id}
+                className="flex justify-center mb-8 bg-stone-50 p-8 rounded-3xl border border-stone-100 group-hover:bg-white group-hover:border-emerald-100 transition-all"
+              >
+                <div className="p-4 bg-white rounded-2xl shadow-xl shadow-stone-900/5">
+                  <QRCodeSVG value={qr.url} size={150} level="H" includeMargin={true} />
+                </div>
               </div>
-            </div>
 
-            <div className="mb-6">
-              <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">{qr.gardenName}</div>
-              <h3 className="text-xl font-bold text-stone-900 mb-2">{qr.areaName}</h3>
-              <div className="text-xs font-mono text-stone-400 bg-stone-50 px-2 py-1 rounded-md inline-block">
-                {qr.code}
+              <div className="mb-6">
+                <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">{qr.gardenName}</div>
+                <h3 className="text-xl font-bold text-stone-900 mb-2">{qr.areaName}</h3>
+                <div className="flex items-center space-x-2">
+                  <div className="text-[10px] font-mono text-stone-400 bg-stone-50 px-2 py-1 rounded-md">
+                    {qr.code}
+                  </div>
+                  <div className="text-[10px] font-medium text-stone-400 truncate max-w-[150px]">
+                    {qr.url}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-8">
-               <div className="bg-stone-50 p-4 rounded-2xl">
-                  <div className="text-[10px] text-stone-400 font-bold uppercase tracking-tight mb-1">Total Scans</div>
-                  <div className="text-lg font-black text-stone-900">{qr.scans}</div>
-               </div>
-               <div className="bg-stone-50 p-4 rounded-2xl">
-                  <div className="text-[10px] text-stone-400 font-bold uppercase tracking-tight mb-1">Created</div>
-                  <div className="text-xs font-bold text-stone-900">{qr.createdAt}</div>
-               </div>
-            </div>
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                 <div className="bg-stone-50 p-4 rounded-2xl">
+                    <div className="text-[10px] text-stone-400 font-bold uppercase tracking-tight mb-1">Total Scans</div>
+                    <div className="text-lg font-black text-stone-900">{qr.scans}</div>
+                 </div>
+                 <div className="bg-stone-50 p-4 rounded-2xl">
+                    <div className="text-[10px] text-stone-400 font-bold uppercase tracking-tight mb-1">Created</div>
+                    <div className="text-xs font-bold text-stone-900">{qr.createdAt}</div>
+                 </div>
+              </div>
 
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => copyToClipboard(qr.url)}
-                className="flex-grow flex items-center justify-center space-x-2 py-3 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all active:scale-95"
-              >
-                <Copy size={14} />
-                <span>Copy URL</span>
-              </button>
-              <button 
-                onClick={() => handleDownload(qr.id, qr.areaName)}
-                className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-95"
-                title="Download PNG"
-              >
-                <Download size={18} />
-              </button>
-              <button 
-                onClick={() => handlePrint(qr.areaName)}
-                className="p-3 bg-stone-50 text-stone-400 rounded-xl hover:text-stone-900 transition-all active:scale-95"
-                title="Print QR"
-              >
-                <Printer size={18} />
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => copyToClipboard(qr.url)}
+                  className="flex-grow flex items-center justify-center space-x-2 py-3 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all active:scale-95"
+                >
+                  <Copy size={14} />
+                  <span>Copy URL</span>
+                </button>
+                <button 
+                  onClick={() => handleDownload(qr.id, qr.areaName)}
+                  className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all active:scale-95"
+                  title="Download PNG"
+                >
+                  <Download size={18} />
+                </button>
+                <button 
+                  onClick={() => handlePrint(qr.areaName)}
+                  className="p-3 bg-stone-50 text-stone-400 rounded-xl hover:text-stone-900 transition-all active:scale-95"
+                  title="Print QR"
+                >
+                  <Printer size={18} />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -255,7 +255,7 @@ export default function PlantDetails() {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       <div className="absolute top-4 left-4">
-                        <span className="bg-white/90 backdrop-blur-md text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                        <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
                           {plantCategory?.name || 'Species'}
                         </span>
                       </div>

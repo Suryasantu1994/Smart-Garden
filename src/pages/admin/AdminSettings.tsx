@@ -76,15 +76,17 @@ export default function AdminSettings() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-4">Website URL</label>
+              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-4">Public Website URL (Auto-Detected)</label>
               <div className="relative">
-                <Globe className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-300" size={18} />
+                <Globe className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500" size={18} />
                 <input 
                   type="url" 
-                  defaultValue="https://botanical-inst.org"
-                  className="w-full pl-14 pr-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                  readOnly
+                  value={window.location.origin.replace('ais-dev-', 'ais-pre-')}
+                  className="w-full pl-14 pr-6 py-4 bg-stone-100 border border-stone-200 rounded-2xl outline-none font-medium text-stone-500 cursor-not-allowed"
                 />
               </div>
+              <p className="text-[10px] text-stone-400 font-medium ml-4">This is the standalone domain where visitors will land when scanning QR codes.</p>
             </div>
           </div>
         </motion.section>

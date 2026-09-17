@@ -63,16 +63,16 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
       const result = await signInWithPopup(auth, provider);
       await checkAdminAccess(result.user.uid, result.user.email);
     } catch (error: any) {
-      console.error('Google Sign-in Error:', error);
-      
       if (error.code === 'auth/operation-not-allowed') {
+        console.error('Google Sign-in Error:', error);
         toast.error('Google Sign-in Disabled', {
           description: 'The Google Sign-in method is not enabled in the Firebase Console. Please enable it or use the demo credentials.',
           duration: 6000
         });
       } else if (error.code === 'auth/popup-closed-by-user') {
-        // Silently handle popup closed
+        // Silently handle popup closed - no log needed as it's a user action
       } else {
+        console.error('Google Sign-in Error:', error);
         toast.error('Authentication Failed', {
           description: error.message || 'An error occurred during Google Sign-in.'
         });
@@ -94,8 +94,12 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
         try {
           const { signInAnonymously } = await import('firebase/auth');
           await signInAnonymously(auth);
-        } catch (authError) {
-          console.warn('Silent anonymous auth failed, proceeding with local-only session:', authError);
+        } catch (authError: any) {
+          if (authError.code === 'auth/operation-not-allowed') {
+            console.warn('Anonymous auth disabled in Firebase Console. Bypassing for master admin.');
+          } else {
+            console.warn('Silent anonymous auth failed, proceeding with local-only session:', authError);
+          }
         }
         localStorage.setItem('admin_auth', 'true');
         onLogin();
@@ -106,12 +110,11 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
         await checkAdminAccess(result.user.uid, result.user.email);
       }
     } catch (error: any) {
-      console.error('Login Error:', error);
-      
       if (error.code === 'auth/operation-not-allowed') {
-        toast.error('Provider Disabled', {
-          description: 'Email sign-in is disabled in Firebase Console. Please use the Demo Credentials (vkatakam@gitam.edu / admin123).',
-          duration: 8000
+        console.error('Email Provider Disabled:', error);
+        toast.error('Sign-in Method Disabled', {
+          description: 'Email/Password sign-in is not enabled in your Firebase Console. Please enable it under Authentication > Sign-in method, or use the Demo Access button.',
+          duration: 10000
         });
       } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         toast.error('Invalid Credentials', {

@@ -118,7 +118,14 @@ export default function AdminAreas() {
   };
 
   const handleGetQR = (area: GardenArea) => {
-    const publicUrl = `${window.location.origin}/scan/${area.code}`;
+    // Intelligent Domain Switching to ensure QR codes always point to the public site
+    const currentOrigin = window.location.origin;
+    let baseUrl = currentOrigin;
+    if (currentOrigin.includes('ais-dev-')) {
+      baseUrl = currentOrigin.replace('ais-dev-', 'ais-pre-');
+    }
+    
+    const publicUrl = `${baseUrl}/scan/${area.code}`;
     window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}`, '_blank');
     toast.success(`QR Code generated for ${area.name}`);
   };
