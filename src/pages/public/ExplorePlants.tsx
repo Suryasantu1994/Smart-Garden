@@ -133,56 +133,60 @@ export default function ExplorePlants() {
             filteredPlants.map((plant, idx) => {
               const plantCategory = categories.find(c => c.id === plant.categoryId);
               return (
-                <motion.div
+                <Link
                   key={plant.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="group bg-white rounded-[2.5rem] overflow-hidden border border-stone-200 hover:border-emerald-200 transition-all hover:shadow-2xl hover:shadow-emerald-900/5 flex flex-col"
+                  to={`/plant/${plant.id}`}
+                  className="group"
                 >
-                  <div className="relative aspect-[4/5] overflow-hidden">
-                    <img
-                      src={plant.primaryImage}
-                      alt={plant.commonName}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
-                        {plantCategory?.name || 'Species'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6 flex-grow flex flex-col">
-                    <h3 className="text-xl font-bold text-stone-900 mb-1 group-hover:text-emerald-600 transition-colors">
-                      {plant.commonName}
-                    </h3>
-                    <p className="text-stone-400 text-sm italic font-medium mb-4">
-                      {plant.botanicalName}
-                    </p>
-                    <p className="text-stone-500 text-xs leading-relaxed mb-6 line-clamp-2">
-                      {plant.shortDescription}
-                    </p>
-
-                    <div className="mt-auto flex items-center justify-between">
-                      <div className="flex space-x-2">
-                         <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <Sprout size={14} />
-                         </div>
-                         <div className="w-8 h-8 rounded-lg bg-stone-50 text-stone-400 flex items-center justify-center">
-                            <Flower2 size={14} />
-                         </div>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="h-full bg-white rounded-[2.5rem] overflow-hidden border border-stone-200 hover:border-emerald-200 transition-all hover:shadow-2xl hover:shadow-emerald-900/5 flex flex-col"
+                  >
+                    <div className="relative aspect-[4/5] overflow-hidden">
+                      <img
+                        src={plant.primaryImage}
+                        alt={plant.commonName}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
+                          {plantCategory?.name || 'Species'}
+                        </span>
                       </div>
-                      <Link
-                        to={`/plant/${plant.id}`}
-                        className="w-10 h-10 rounded-full bg-stone-900 hover:bg-emerald-600 text-white flex items-center justify-center transition-all active:scale-90"
-                      >
-                        <ArrowRight size={18} />
-                      </Link>
                     </div>
-                  </div>
-                </motion.div>
+
+                    <div className="p-6 flex-grow flex flex-col">
+                      <h3 className="text-xl font-bold text-stone-900 mb-1 group-hover:text-emerald-600 transition-colors">
+                        {plant.commonName}
+                      </h3>
+                      <p className="text-stone-400 text-sm italic font-medium mb-4">
+                        {plant.botanicalName}
+                      </p>
+                      <p className="text-stone-500 text-xs leading-relaxed mb-6 line-clamp-2">
+                        {plant.shortDescription}
+                      </p>
+
+                      <div className="mt-auto flex items-center justify-between">
+                        <div className="flex space-x-2">
+                           <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                              <Sprout size={14} />
+                           </div>
+                           <div className="w-8 h-8 rounded-lg bg-stone-50 text-stone-400 flex items-center justify-center">
+                              <Flower2 size={14} />
+                           </div>
+                        </div>
+                        <div
+                          className="w-10 h-10 rounded-full bg-stone-900 hover:bg-emerald-600 text-white flex items-center justify-center transition-all group-hover:bg-emerald-600 active:scale-90"
+                        >
+                          <ArrowRight size={18} />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
               );
             })
           )}

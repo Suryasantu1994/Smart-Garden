@@ -213,13 +213,13 @@ export default function PlantDetails() {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               {[
-                { icon: Thermometer, label: 'Temperature', value: plant.temperature || '20°C - 35°C' },
-                { icon: Wind, label: 'Humidity', value: plant.humidity || 'Low-Mod' },
-                { icon: History, label: 'Growth Rate', value: plant.growthRate || 'Fast' },
-                { icon: Calendar, label: 'Blooming', value: plant.floweringSeason || 'Spring' },
-                { icon: MapPin, label: 'Native Region', value: plant.nativeRegion || 'India' },
+                { icon: Thermometer, label: 'Temperature', value: plant.temperature },
+                { icon: Wind, label: 'Humidity', value: plant.humidity },
+                { icon: History, label: 'Growth Rate', value: plant.growthRate },
+                { icon: Calendar, label: 'Blooming', value: plant.floweringSeason },
+                { icon: MapPin, label: 'Native Region', value: plant.nativeRegion },
                 { icon: Sprout, label: 'Scientific Name', value: plant.scientificName || plant.botanicalName },
-              ].map((item, idx) => (
+              ].filter(item => item.value).map((item, idx) => (
                 <div key={idx} className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm flex flex-col items-center text-center group hover:bg-emerald-50 transition-colors">
                   <div className="w-12 h-12 bg-stone-50 text-stone-400 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-white group-hover:text-emerald-600 transition-all">
                     <item.icon size={24} />

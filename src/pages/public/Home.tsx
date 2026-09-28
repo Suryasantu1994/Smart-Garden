@@ -5,7 +5,7 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { QrCode, ArrowRight, TreePine, Flower2, Sprout, Map as MapIcon, Search, Info, RefreshCw, LayoutGrid } from 'lucide-react';
+import { ArrowRight, TreePine, Flower2, Sprout, Map as MapIcon, Search, Info, RefreshCw, LayoutGrid } from 'lucide-react';
 import { useState, useEffect, FormEvent } from 'react';
 import { toast } from 'sonner';
 import { gardens as fallbackGardens } from '../../data';
@@ -128,13 +128,6 @@ export default function Home() {
                   <span>Explore Garden</span>
                   <ArrowRight size={20} />
                 </Link>
-                <Link
-                  to="/scanner"
-                  className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-8 py-4 rounded-full text-lg font-semibold flex items-center justify-center space-x-2 transition-all active:scale-95"
-                >
-                  <QrCode size={20} />
-                  <span>Scan QR Code</span>
-                </Link>
               </div>
             </motion.div>
           </div>
@@ -191,8 +184,8 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
               { icon: Search, title: 'Find a Garden', desc: 'Browse our collection of curated botanical zones and virtual landscapes online.', delay: 0 },
-              { icon: QrCode, title: 'Scan the Code', desc: 'Look for QR markers placed at garden entrances or near specific plants.', delay: 0.1 },
-              { icon: Info, title: 'Learn Instantly', desc: 'Access interactive maps, botanical data, and care tips directly on your phone.', delay: 0.2 },
+              { icon: MapIcon, title: 'Explore Map', desc: 'Navigate through interactive garden maps to find interesting locations.', delay: 0.1 },
+              { icon: Info, title: 'Learn Instantly', desc: 'Access interactive botanical data and care tips directly on your phone.', delay: 0.2 },
             ].map((step, idx) => (
               <motion.div
                 key={idx}
@@ -244,49 +237,53 @@ export default function Home() {
                 const gardenPlants = allMarkers.filter(m => gardenAreas.some(a => a.id === m.areaId)).length;
                 
                 return (
-                  <motion.div
+                  <Link
                     key={garden.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: idx * 0.1 }}
-                    viewport={{ once: true }}
-                    className="group relative h-[500px] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-stone-900/10 active:scale-95 transition-all"
+                    to={`/explore?garden=${garden.id}`}
+                    className="group"
                   >
-                    <img 
-                      src={garden.coverImage} 
-                      alt={garden.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/20 to-transparent"></div>
-                    <div className="absolute bottom-0 left-0 p-10 w-full">
-                      <div className="flex flex-col gap-3 mb-6">
-                        <span className="px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-full self-start shadow-lg">
-                          {garden.code}
-                        </span>
-                        <div className="flex gap-2">
-                          <div className="flex items-center space-x-2 bg-stone-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-bold shadow-2xl">
-                            <LayoutGrid size={14} className="text-emerald-400" />
-                            <span>{gardenAreas.length} Areas</span>
-                          </div>
-                          <div className="flex items-center space-x-2 bg-stone-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-bold shadow-2xl">
-                            <TreePine size={14} className="text-emerald-400" />
-                            <span>{gardenPlants || (idx === 0 ? 8 : 0)} Plants</span>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                      viewport={{ once: true }}
+                      className="relative h-[500px] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-stone-900/10 active:scale-95 transition-all"
+                    >
+                      <img 
+                        src={garden.coverImage} 
+                        alt={garden.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/20 to-transparent"></div>
+                      <div className="absolute bottom-0 left-0 p-10 w-full">
+                        <div className="flex flex-col gap-3 mb-6">
+                          <span className="px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-full self-start shadow-lg">
+                            {garden.code}
+                          </span>
+                          <div className="flex gap-2">
+                            <div className="flex items-center space-x-2 bg-stone-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-bold shadow-2xl">
+                              <LayoutGrid size={14} className="text-emerald-400" />
+                              <span>{gardenAreas.length} Areas</span>
+                            </div>
+                            <div className="flex items-center space-x-2 bg-stone-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white text-xs font-bold shadow-2xl">
+                              <TreePine size={14} className="text-emerald-400" />
+                              <span>{gardenPlants || (idx === 0 ? 8 : 0)} Plants</span>
+                            </div>
                           </div>
                         </div>
+                        <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">{garden.name}</h3>
+                        <p className="text-stone-300 text-sm line-clamp-2 mb-6 leading-relaxed">
+                          {garden.description}
+                        </p>
+                        <div 
+                          className="inline-flex items-center space-x-2 text-white font-bold bg-white/10 group-hover:bg-emerald-600 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl transition-all"
+                        >
+                          <span>Explore Map</span>
+                          <ArrowRight size={18} />
+                        </div>
                       </div>
-                      <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">{garden.name}</h3>
-                  <p className="text-stone-300 text-sm line-clamp-2 mb-6 leading-relaxed">
-                    {garden.description}
-                  </p>
-                  <Link 
-                    to={`/explore?garden=${garden.id}`}
-                    className="inline-flex items-center space-x-2 text-white font-bold bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl transition-all"
-                  >
-                    <span>Explore Map</span>
-                    <ArrowRight size={18} />
+                    </motion.div>
                   </Link>
-                </div>
-              </motion.div>
                 );
               })
             )}
@@ -304,7 +301,7 @@ export default function Home() {
               { label: 'Total Gardens', value: `${stats.gardens}+`, icon: MapIcon, path: '/explore' },
               { label: 'Plant Species', value: stats.plants.toLocaleString() + '+', icon: Sprout, path: '/plants' },
               { label: 'Garden Areas', value: `${stats.areas}+`, icon: TreePine, path: '/explore' },
-              { label: 'QR Locations', value: `${stats.markers}+`, icon: QrCode, path: '/scanner' },
+              { label: 'Locations', value: `${stats.markers}+`, icon: MapIcon, path: '/explore' },
             ].map((stat, idx) => (
               <Link key={idx} to={stat.path} className="hover:scale-110 transition-transform block">
                 <div className="text-emerald-400 mb-4 flex justify-center">
@@ -339,12 +336,6 @@ export default function Home() {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-5 rounded-full text-lg font-semibold transition-all active:scale-95"
                 >
                   Explore Gardens
-                </Link>
-                <Link
-                  to="/scanner"
-                  className="bg-white hover:bg-stone-100 text-stone-900 px-10 py-5 rounded-full text-lg font-semibold transition-all active:scale-95"
-                >
-                  Scan QR Code
                 </Link>
               </div>
             </div>

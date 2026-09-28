@@ -26,6 +26,16 @@ export default function PlantModal({ isOpen, onClose, onSave, plant, categories 
     categoryId: '',
     shortDescription: '',
     description: '',
+    scientificName: '',
+    family: '',
+    benefits: '',
+    careInstructions: '',
+    temperature: '',
+    humidity: '',
+    averageHeight: '',
+    growthRate: '',
+    floweringSeason: '',
+    nativeRegion: '',
     status: 'active',
     sunlightRequirement: 'partial',
     waterRequirement: 'moderate',
@@ -33,20 +43,32 @@ export default function PlantModal({ isOpen, onClose, onSave, plant, categories 
   });
 
   useEffect(() => {
+    const defaults = {
+      commonName: '',
+      botanicalName: '',
+      categoryId: categories[0]?.id || '',
+      shortDescription: '',
+      description: '',
+      scientificName: '',
+      family: '',
+      benefits: '',
+      careInstructions: '',
+      temperature: '',
+      humidity: '',
+      averageHeight: '',
+      growthRate: '',
+      floweringSeason: '',
+      nativeRegion: '',
+      status: 'active' as const,
+      sunlightRequirement: 'partial' as const,
+      waterRequirement: 'moderate' as const,
+      primaryImage: 'https://images.unsplash.com/photo-1545239351-ef056c0b01d4?auto=format&fit=crop&q=80&w=800',
+    };
+
     if (plant) {
-      setFormData(plant);
+      setFormData({ ...defaults, ...plant });
     } else {
-      setFormData({
-        commonName: '',
-        botanicalName: '',
-        categoryId: categories[0]?.id || '',
-        shortDescription: '',
-        description: '',
-        status: 'active',
-        sunlightRequirement: 'partial',
-        waterRequirement: 'moderate',
-        primaryImage: 'https://images.unsplash.com/photo-1545239351-ef056c0b01d4?auto=format&fit=crop&q=80&w=800',
-      });
+      setFormData(defaults);
     }
   }, [plant, categories]);
 
@@ -182,28 +204,76 @@ export default function PlantModal({ isOpen, onClose, onSave, plant, categories 
                 </div>
 
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Common Name</label>
-                    <input
-                      required
-                      type="text"
-                      value={formData.commonName}
-                      onChange={(e) => setFormData({ ...formData, commonName: e.target.value })}
-                      className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
-                      placeholder="e.g. Neem, Hibiscus..."
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Common Name</label>
+                      <input
+                        required
+                        type="text"
+                        value={formData.commonName}
+                        onChange={(e) => setFormData({ ...formData, commonName: e.target.value })}
+                        className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                        placeholder="e.g. Neem, Hibiscus..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Botanical Name</label>
+                      <input
+                        required
+                        type="text"
+                        value={formData.botanicalName}
+                        onChange={(e) => setFormData({ ...formData, botanicalName: e.target.value })}
+                        className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium italic"
+                        placeholder="e.g. Azadirachta indica..."
+                      />
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Botanical Name</label>
-                    <input
-                      required
-                      type="text"
-                      value={formData.botanicalName}
-                      onChange={(e) => setFormData({ ...formData, botanicalName: e.target.value })}
-                      className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium italic"
-                      placeholder="e.g. Azadirachta indica..."
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Scientific Name</label>
+                      <input
+                        type="text"
+                        value={formData.scientificName}
+                        onChange={(e) => setFormData({ ...formData, scientificName: e.target.value })}
+                        className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium italic"
+                        placeholder="e.g. Azadirachta indica..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Family</label>
+                      <input
+                        type="text"
+                        value={formData.family}
+                        onChange={(e) => setFormData({ ...formData, family: e.target.value })}
+                        className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                        placeholder="e.g. Meliaceae..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Native Region</label>
+                      <input
+                        type="text"
+                        value={formData.nativeRegion}
+                        onChange={(e) => setFormData({ ...formData, nativeRegion: e.target.value })}
+                        className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                        placeholder="e.g. Indian Subcontinent..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Average Height</label>
+                      <input
+                        type="text"
+                        value={formData.averageHeight}
+                        onChange={(e) => setFormData({ ...formData, averageHeight: e.target.value })}
+                        className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                        placeholder="e.g. 15-20 meters..."
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -258,6 +328,74 @@ export default function PlantModal({ isOpen, onClose, onSave, plant, categories 
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium resize-none"
                     placeholder="Detailed information about the species..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Temperature Range</label>
+                    <input
+                      type="text"
+                      value={formData.temperature}
+                      onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
+                      className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                      placeholder="e.g. 20°C - 35°C..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Humidity Needs</label>
+                    <input
+                      type="text"
+                      value={formData.humidity}
+                      onChange={(e) => setFormData({ ...formData, humidity: e.target.value })}
+                      className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                      placeholder="e.g. Low to moderate..."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Growth Rate</label>
+                    <input
+                      type="text"
+                      value={formData.growthRate}
+                      onChange={(e) => setFormData({ ...formData, growthRate: e.target.value })}
+                      className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                      placeholder="e.g. Fast..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Flowering Season</label>
+                    <input
+                      type="text"
+                      value={formData.floweringSeason}
+                      onChange={(e) => setFormData({ ...formData, floweringSeason: e.target.value })}
+                      className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                      placeholder="e.g. Spring..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Key Benefits</label>
+                  <input
+                    type="text"
+                    value={formData.benefits}
+                    onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
+                    className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium"
+                    placeholder="e.g. Medicinal uses, air purification..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Detailed Care Instructions</label>
+                  <textarea
+                    rows={3}
+                    value={formData.careInstructions}
+                    onChange={(e) => setFormData({ ...formData, careInstructions: e.target.value })}
+                    className="w-full px-6 py-4 bg-stone-50 border border-stone-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-medium resize-none"
+                    placeholder="Specific watering, pruning or feeding needs..."
                   />
                 </div>
 

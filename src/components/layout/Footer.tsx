@@ -51,7 +51,6 @@ export default function Footer() {
             <ul className="space-y-4 text-sm">
               <li><Link to="/explore" className="hover:text-emerald-500 transition-colors">All Gardens</Link></li>
               <li><Link to="/plants" className="hover:text-emerald-500 transition-colors">Plant Database</Link></li>
-              <li><Link to="/scanner" className="hover:text-emerald-500 transition-colors">QR Scanner</Link></li>
             </ul>
           </div>
 

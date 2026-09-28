@@ -4,7 +4,7 @@
  */
 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Leaf, Menu, X, QrCode, Search, MapPin, Sprout } from 'lucide-react';
+import { Leaf, Menu, X, Search, MapPin, Sprout } from 'lucide-react';
 import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -117,13 +117,6 @@ export default function Navbar() {
             >
               <Search size={20} />
             </button>
-            <Link
-              to="/scanner"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-full text-sm font-semibold flex items-center space-x-2 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
-            >
-              <QrCode size={18} />
-              <span>Scan QR</span>
-            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -134,12 +127,6 @@ export default function Navbar() {
             >
               <Search size={20} />
             </button>
-            <Link
-              to="/scanner"
-              className="p-2 bg-emerald-600 text-white rounded-lg shadow-lg shadow-emerald-600/20"
-            >
-              <QrCode size={20} />
-            </Link>
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-stone-600 hover:text-stone-900"

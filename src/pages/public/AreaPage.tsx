@@ -296,7 +296,7 @@ export default function AreaPage() {
                 {[
                   { title: 'Digital Identification', desc: 'Identify any marked plant instantly' },
                   { title: 'Interactive Map', desc: 'Real-time positioning and visual guide' },
-                  { title: 'QR Connectivity', desc: 'Jump to zones using physical codes' },
+                  { title: 'Rich Media', desc: 'Access high-quality photos and details' },
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-start space-x-4">
                     <div className="w-2 h-2 bg-emerald-400 rounded-full mt-2 shrink-0"></div>

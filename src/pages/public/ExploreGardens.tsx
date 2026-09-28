@@ -169,60 +169,64 @@ export default function ExploreGardens() {
             const gardenPlantsCount = markers.filter(m => gardenAreasList.some(a => a.id === m.areaId)).length || (idx === 0 ? 8 : 0); 
 
             return (
-              <motion.div
+              <Link
                 key={garden.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="group bg-white rounded-3xl overflow-hidden border border-stone-200 hover:border-emerald-200 transition-all hover:shadow-xl hover:shadow-emerald-900/5 flex flex-col"
+                to={`/garden/${garden.id}`}
+                className="group"
               >
-                <div className="relative h-64 overflow-hidden">
-                  <img
-                    src={garden.coverImage}
-                    alt={garden.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  
-                  {/* Badges Overlaid on Image */}
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md self-start">
-                      {garden.code}
-                    </span>
-                    <div className="flex gap-2">
-                      <div className="flex items-center space-x-1.5 bg-stone-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-white text-[11px] font-bold shadow-xl">
-                        <LayoutGrid size={13} className="text-emerald-400" />
-                        <span>{gardenAreasCount} Areas</span>
-                      </div>
-                      <div className="flex items-center space-x-1.5 bg-stone-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-white text-[11px] font-bold shadow-xl">
-                        <TreePine size={13} className="text-emerald-400" />
-                        <span>{gardenPlantsCount} Plants</span>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="h-full bg-white rounded-3xl overflow-hidden border border-stone-200 hover:border-emerald-200 transition-all hover:shadow-xl hover:shadow-emerald-900/5 flex flex-col"
+                >
+                  <div className="relative h-64 overflow-hidden">
+                    <img
+                      src={garden.coverImage}
+                      alt={garden.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    {/* Badges Overlaid on Image */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md self-start">
+                        {garden.code}
+                      </span>
+                      <div className="flex gap-2">
+                        <div className="flex items-center space-x-1.5 bg-stone-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-white text-[11px] font-bold shadow-xl">
+                          <LayoutGrid size={13} className="text-emerald-400" />
+                          <span>{gardenAreasCount} Areas</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 bg-stone-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/10 text-white text-[11px] font-bold shadow-xl">
+                          <TreePine size={13} className="text-emerald-400" />
+                          <span>{gardenPlantsCount} Plants</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="p-8 flex-grow flex flex-col">
-                  <div className="flex items-center space-x-2 text-emerald-600 mb-3">
-                    <MapPin size={14} />
-                    <span className="text-xs font-semibold uppercase tracking-wider">{garden.location}</span>
+                  <div className="p-8 flex-grow flex flex-col">
+                    <div className="flex items-center space-x-2 text-emerald-600 mb-3">
+                      <MapPin size={14} />
+                      <span className="text-xs font-semibold uppercase tracking-wider">{garden.location}</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-stone-900 mb-3 group-hover:text-emerald-600 transition-colors">
+                      {garden.name}
+                    </h3>
+                    <p className="text-stone-500 text-sm leading-relaxed mb-6 flex-grow line-clamp-2">
+                      {garden.description}
+                    </p>
+
+                    <div
+                      className="bg-stone-900 hover:bg-emerald-600 text-white w-full py-4 rounded-2xl font-semibold flex items-center justify-center space-x-2 transition-all group-hover:bg-emerald-600 active:scale-95 shadow-lg shadow-stone-900/10 hover:shadow-emerald-600/20"
+                    >
+                      <span>Explore Garden</span>
+                      <ArrowRight size={18} />
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-stone-900 mb-3 group-hover:text-emerald-600 transition-colors">
-                    {garden.name}
-                  </h3>
-                  <p className="text-stone-500 text-sm leading-relaxed mb-6 flex-grow line-clamp-2">
-                    {garden.description}
-                  </p>
-
-                  <Link
-                    to={`/garden/${garden.id}`}
-                    className="bg-stone-900 hover:bg-emerald-600 text-white w-full py-4 rounded-2xl font-semibold flex items-center justify-center space-x-2 transition-all active:scale-95 shadow-lg shadow-stone-900/10 hover:shadow-emerald-600/20"
-                  >
-                    <span>Explore Garden</span>
-                    <ArrowRight size={18} />
-                  </Link>
-                </div>
-              </motion.div>
+                </motion.div>
+              </Link>
             );
           }))}
         </div>

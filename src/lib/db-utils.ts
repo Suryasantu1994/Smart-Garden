@@ -170,7 +170,7 @@ export async function getGardens(): Promise<any[]> {
   try {
     const q = query(collection(db, collections.GARDENS));
     const snapshot = await getDocs(q);
-    const gardens = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const gardens = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
     return gardens.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, collections.GARDENS);

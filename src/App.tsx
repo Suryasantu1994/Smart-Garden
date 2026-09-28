@@ -14,7 +14,6 @@ import ExplorePlants from './pages/public/ExplorePlants';
 import GardenDetails from './pages/public/GardenDetails';
 import AreaPage from './pages/public/AreaPage';
 import PlantDetails from './pages/public/PlantDetails';
-import QRScanner from './pages/public/QRScanner';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminGardens from './pages/admin/AdminGardens';
@@ -68,7 +67,6 @@ function AppContent() {
                     <Route path="/garden/:gardenId/area/:areaId" element={<AreaPage />} />
                     <Route path="/plant/:plantId" element={<PlantDetails />} />
                     <Route path="/scan/:qrCode" element={<AreaPage />} />
-                    <Route path="/scanner" element={<QRScanner />} />
                   </Routes>
                 </main>
                 <Footer />

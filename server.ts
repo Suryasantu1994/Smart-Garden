@@ -13,6 +13,8 @@ async function startServer() {
   const PORT = 3000;
   const isProd = process.env.NODE_ENV === "production";
 
+  app.use(express.json());
+
   // API routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
