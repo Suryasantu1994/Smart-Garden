@@ -25,7 +25,20 @@ export default function PlantMarker({ x, y, number, active, onClick, color, labe
   return (
     <motion.button
       initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
+      animate={{ 
+        scale: 1, 
+        opacity: 1,
+        y: [0, -6, 0]
+      }}
+      transition={{
+        scale: { duration: 0.3 },
+        opacity: { duration: 0.3 },
+        y: {
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={onClick}

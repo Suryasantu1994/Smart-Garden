@@ -203,7 +203,18 @@ export default function AdminAreaMapEditor() {
                   <motion.div
                     key={marker.id}
                     initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
+                    animate={{ 
+                      scale: 1,
+                      y: [0, -4, 0]
+                    }}
+                    transition={{
+                      scale: { duration: 0.3 },
+                      y: {
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }
+                    }}
                     className={`absolute z-20 transition-all ${isSelected ? 'z-30' : ''}`}
                     style={{ top: `${marker.y}%`, left: `${marker.x}%`, transform: 'translate(-50%, -50%)' }}
                     onClick={(e) => {
