@@ -57,8 +57,14 @@ export default function AdminAreas() {
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [gardenId]);
+    // Fallback timer
+    const timer = setTimeout(() => setIsLoading(false), 3000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, [gardenId]); // Re-subscribe only if gardenId changes
 
   const handleSeedData = async () => {
     if (!gardenId) return;
@@ -155,7 +161,7 @@ export default function AdminAreas() {
             <span>Back to Gardens</span>
           </Link>
           <h1 className="text-3xl font-bold text-stone-900 mb-2 tracking-tight">Areas in {garden.name}</h1>
-          <p className="text-stone-50">Manage interactive zones and sections within this garden.</p>
+          <p className="text-stone-500">Manage interactive zones and sections within this garden.</p>
         </div>
         <div className="flex space-x-3">
           {areas.length > 0 && !areas.some(a => a.id.startsWith('a-')) && (

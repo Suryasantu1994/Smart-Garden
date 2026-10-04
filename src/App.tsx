@@ -26,6 +26,33 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminAreaMapEditor from './pages/admin/AdminAreaMapEditor';
 import AdminLayout from './components/layout/AdminLayout';
 import { FirebaseProvider, useFirebase } from './components/FirebaseProvider';
+import { getUpgradeLink } from './lib/firebase';
+import { AlertCircle, ExternalLink } from 'lucide-react';
+
+function QuotaBanner() {
+  const { quotaExceeded, isAdmin } = useFirebase();
+  
+  if (!quotaExceeded) return null;
+
+  return (
+    <div className="bg-rose-600 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center space-x-3 sticky top-0 z-[1000] animate-in slide-in-from-top duration-500">
+      <AlertCircle size={16} className="shrink-0" />
+      <span>
+        Botanical database is currently in read-only mode due to high traffic. 
+        {isAdmin && (
+          <a 
+            href={getUpgradeLink()} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="ml-2 underline hover:text-rose-100 inline-flex items-center"
+          >
+            Upgrade live capacity <ExternalLink size={12} className="ml-1" />
+          </a>
+        )}
+      </span>
+    </div>
+  );
+}
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin, loading } = useFirebase();
@@ -50,6 +77,7 @@ function AppContent() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-stone-50 font-sans text-stone-900">
+        <QuotaBanner />
         <Toaster position="top-center" richColors expand={false} />
         <Routes>
           {/* Public Routes */}

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Search, Flower2, Sprout, Leaf, ArrowRight, RefreshCw, Filter } from 'lucide-react';
+import { toast } from 'sonner';
 import { plants as fallbackPlants, categories as fallbackCategories } from '../../data';
 import { getPlants, getCategories } from '../../lib/db-utils';
 import { Plant, PlantCategory } from '../../types';
@@ -30,10 +31,16 @@ export default function ExplorePlants() {
         
         setPlants(dbPlants.length > 0 ? dbPlants : fallbackPlants as Plant[]);
         setCategories(dbCategories.length > 0 ? dbCategories : fallbackCategories as PlantCategory[]);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading plants explorer:', error);
         setPlants(fallbackPlants as Plant[]);
         setCategories(fallbackCategories as PlantCategory[]);
+        
+        if (error?.message?.includes('Quota limit exceeded')) {
+          toast.error('Botanical library busy', {
+            description: 'We are showing archived plant records while the live database resets.'
+          });
+        }
       } finally {
         setIsLoading(false);
       }

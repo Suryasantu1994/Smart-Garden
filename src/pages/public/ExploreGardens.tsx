@@ -37,11 +37,27 @@ export default function ExploreGardens() {
         setAreas(dbAreas.length > 0 ? dbAreas : fallbackAreas);
         setPlants(dbPlants.length > 0 ? dbPlants : fallbackPlants);
         setMarkers(dbMarkers.length > 0 ? dbMarkers : []);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading explorer data:', error);
         setGardens(fallbackGardens);
         setAreas(fallbackAreas);
         setPlants(fallbackPlants);
+        
+        if (error?.message?.includes('Quota limit exceeded')) {
+          const upgradeMatch = error.message.match(/UPGRADE_LINK: (https:\/\/\S+)/);
+          const upgradeUrl = upgradeMatch ? upgradeMatch[1] : null;
+          
+          toast.error('Botanical database busy', {
+            description: upgradeUrl 
+              ? 'Read quota reached. If you are the admin, please upgrade: ' + upgradeUrl 
+              : 'We are showing local garden records while the live database resets.',
+            duration: upgradeUrl ? 10000 : 4000
+          });
+          
+          if (upgradeUrl) {
+             console.info('Database Upgrade required for more traffic:', upgradeUrl);
+          }
+        }
       } finally {
         setIsLoading(false);
       }

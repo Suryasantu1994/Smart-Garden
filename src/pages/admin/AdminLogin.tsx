@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { auth, db } from '../../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import { getQuotaState } from '../../lib/db-utils';
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -24,28 +25,47 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   const navigate = useNavigate();
 
   const checkAdminAccess = async (uid: string, userEmail: string | null) => {
-    const adminRef = doc(db, 'admins', uid);
-    const adminSnap = await getDoc(adminRef);
-    
-    // Bootstrap admin check
     const normalizedEmail = userEmail?.toLowerCase();
     const isBootstrapAdmin = normalizedEmail === 'vkatakam@gitam.edu';
     
-    if (adminSnap.exists() || isBootstrapAdmin) {
-      // If they are a bootstrap admin but not in the collection, add them
-      if (isBootstrapAdmin && !adminSnap.exists()) {
-        try {
-          const { setDoc } = await import('firebase/firestore');
-          await setDoc(adminRef, {
-            email: normalizedEmail,
-            role: 'super_admin',
-            createdAt: new Date().toISOString()
-          });
-        } catch (e) {
-          console.error('Failed to register bootstrap admin:', e);
-          // Continue anyway since isBootstrapAdmin is true
+    let isAdmin = isBootstrapAdmin;
+    let adminInCollection = false;
+
+    // Only attempt Firestore check if quota isn't already known to be exceeded
+    if (!getQuotaState()) {
+      try {
+        const adminRef = doc(db, 'admins', uid);
+        const adminSnap = await getDoc(adminRef);
+        adminInCollection = adminSnap.exists();
+        if (adminInCollection) {
+          isAdmin = true;
+        }
+
+        // If they are a bootstrap admin but not in the collection, attempt to add them
+        if (isBootstrapAdmin && !adminInCollection) {
+          try {
+            const { setDoc } = await import('firebase/firestore');
+            await setDoc(adminRef, {
+              email: normalizedEmail,
+              role: 'super_admin',
+              createdAt: new Date().toISOString()
+            });
+          } catch (e) {
+            console.warn('Failed to register bootstrap admin (likely quota):', e);
+          }
+        }
+      } catch (e: any) {
+        console.warn('Firestore admin check failed (likely quota):', e);
+        // If quota is hit during this check, we trust isBootstrapAdmin
+        if (e?.message?.includes('Quota limit exceeded')) {
+          isAdmin = isBootstrapAdmin;
         }
       }
+    } else {
+      console.info('Quota exceeded - relying on bootstrap admin check for login');
+    }
+    
+    if (isAdmin) {
       onLogin();
       navigate('/admin');
     } else {

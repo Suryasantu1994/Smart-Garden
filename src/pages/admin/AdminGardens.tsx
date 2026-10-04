@@ -45,8 +45,14 @@ export default function AdminGardens() {
     // Also fetch areas to show counts
     getAreas().then(setAreas);
 
-    return () => unsubscribe();
-  }, []);
+    // Fallback timer
+    const timer = setTimeout(() => setIsLoading(false), 3000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, []); // Mount only
 
   const handleSeedData = async () => {
     setIsSeeding(true);

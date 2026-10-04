@@ -51,7 +51,7 @@ export default function Home() {
           areas: dbAreas.length > 0 ? dbAreas.length : 1,
           markers: dbMarkers.length > 0 ? dbMarkers.length : 9
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading home data:', error);
         setGardens(fallbackGardens);
         setStats({
@@ -60,6 +60,22 @@ export default function Home() {
           areas: 1,
           markers: 9
         });
+        
+        if (error?.message?.includes('Quota limit exceeded')) {
+          const upgradeMatch = error.message.match(/UPGRADE_LINK: (https:\/\/\S+)/);
+          const upgradeUrl = upgradeMatch ? upgradeMatch[1] : null;
+
+          toast.error('Gitam Garden database busy', {
+            description: upgradeUrl 
+              ? 'Database limit reached. If you are the administrator, upgrade here: ' + upgradeUrl
+              : 'Live updates are temporarily paused due to high traffic. Showing archived data.',
+            duration: upgradeUrl ? 10000 : 5000
+          });
+          
+          if (upgradeUrl) {
+            console.info('Firestore Read Limit Hit. Upgrade at:', upgradeUrl);
+          }
+        }
       } finally {
         setIsLoading(false);
       }

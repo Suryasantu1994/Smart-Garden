@@ -43,6 +43,12 @@ export default function GardenDetails() {
         }
       } catch (error) {
         console.error('Error loading garden details:', error);
+        // Robust fallback if catch is hit
+        const fallbackG = fallbackGardens.find(g => g.id === gardenId);
+        if (fallbackG) {
+          setGarden(fallbackG);
+          setGardenAreas(fallbackAreas.filter(a => a.gardenId === gardenId));
+        }
       } finally {
         setIsLoading(false);
       }
@@ -55,6 +61,25 @@ export default function GardenDetails() {
       <div className="pt-32 pb-24 min-h-screen flex flex-col items-center justify-center bg-stone-50 space-y-4">
         <RefreshCw className="animate-spin text-emerald-600" size={48} />
         <p className="text-stone-400 font-bold text-xs uppercase tracking-widest">Entering the Sanctuary...</p>
+      </div>
+    );
+  }
+
+  if (!garden) {
+    return (
+      <div className="pt-32 pb-24 min-h-screen flex items-center justify-center bg-stone-50">
+        <div className="text-center p-8 bg-white rounded-3xl shadow-xl max-w-sm">
+          <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Info size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-stone-900 mb-2">Garden Not Found</h2>
+          <p className="text-stone-500 mb-8">
+            The requested garden may no longer be available or there was an error loading its details.
+          </p>
+          <Link to="/explore" className="block w-full bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+            Back to Explore
+          </Link>
+        </div>
       </div>
     );
   }

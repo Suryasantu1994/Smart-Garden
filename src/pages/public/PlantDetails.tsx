@@ -93,6 +93,14 @@ export default function PlantDetails() {
         }
       } catch (error) {
         console.error('Error loading plant details:', error);
+        // Robust fallback if catch is hit
+        const fallbackP = fallbackPlants.find(p => p.id === plantId);
+        if (fallbackP) {
+          setPlant(fallbackP);
+          setCategory(fallbackCategories.find(c => c.id === fallbackP.categoryId));
+          setActiveAreas(fallbackAreas.slice(0, 2));
+          setOtherPlants(fallbackPlants.filter(p => p.id !== plantId).slice(0, 3));
+        }
       } finally {
         setIsLoading(false);
       }
@@ -103,11 +111,11 @@ export default function PlantDetails() {
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
     if (!isFavorite) {
-      toast.success(`${plant?.commonName} added to favorites!`, {
+      toast.success(`${plant?.commonName || 'Plant'} added to favorites!`, {
         description: 'You can view your favorites in your profile.'
       });
     } else {
-      toast.info(`${plant?.commonName} removed from favorites.`);
+      toast.info(`${plant?.commonName || 'Plant'} removed from favorites.`);
     }
   };
 
@@ -116,6 +124,25 @@ export default function PlantDetails() {
       <div className="pt-32 pb-24 min-h-screen flex flex-col items-center justify-center bg-stone-50 space-y-4">
         <RefreshCw className="animate-spin text-emerald-600" size={48} />
         <p className="text-stone-400 font-bold text-xs uppercase tracking-widest">Reading Botanical Records...</p>
+      </div>
+    );
+  }
+
+  if (!plant) {
+    return (
+      <div className="pt-32 pb-24 min-h-screen flex items-center justify-center bg-stone-50">
+        <div className="text-center p-8 bg-white rounded-3xl shadow-xl max-w-sm">
+          <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <X size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-stone-900 mb-2">Plant Not Found</h2>
+          <p className="text-stone-500 mb-8">
+            The botanical record you're looking for may have been moved or is currently unavailable.
+          </p>
+          <Link to="/plants" className="block w-full bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
+            Back to Directory
+          </Link>
+        </div>
       </div>
     );
   }

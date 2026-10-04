@@ -7,11 +7,19 @@ import { useParams, Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ZoomIn, ZoomOut, RotateCcw, List, Info, Map as MapIcon, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 import { gardens as fallbackGardens, areas as fallbackAreas, markers as fallbackMarkers, plants as fallbackPlants, categories as fallbackCategories } from '../../data';
 import PlantMarker from '../../components/garden/PlantMarker';
 import PlantPopup from '../../components/garden/PlantPopup';
 import { Plant, GardenArea, Garden, PlantCategory } from '../../types';
-import { subscribeToAreas, subscribeToGardens, subscribeToMarkers, subscribeToPlants, subscribeToCategories, recordScan } from '../../lib/db-utils';
+import { 
+  getGardens, 
+  getAreas, 
+  getMarkers, 
+  getPlants, 
+  getCategories, 
+  recordScan 
+} from '../../lib/db-utils';
 
 export default function AreaPage() {
   const { gardenId, areaId, qrCode } = useParams<{ gardenId?: string; areaId?: string; qrCode?: string }>();
@@ -31,34 +39,45 @@ export default function AreaPage() {
   const [hasLoadedGardens, setHasLoadedGardens] = useState(false);
 
   useEffect(() => {
-    setIsLoading(true);
-    const unsubs = [
-      subscribeToGardens((data) => {
-        setGardens(data.length > 0 ? data : fallbackGardens as Garden[]);
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [dbGardens, dbAreas, dbMarkers, dbPlants, dbCategories] = await Promise.all([
+          getGardens(),
+          getAreas(gardenId),
+          getMarkers(areaId),
+          getPlants(),
+          getCategories()
+        ]);
+        
+        setGardens(dbGardens.length > 0 ? dbGardens : fallbackGardens as Garden[]);
+        setAreas(dbAreas.length > 0 ? dbAreas : fallbackAreas as GardenArea[]);
+        setMarkers(dbMarkers.length > 0 ? dbMarkers : fallbackMarkers);
+        setPlants(dbPlants.length > 0 ? dbPlants : fallbackPlants as Plant[]);
+        setCategories(dbCategories.length > 0 ? dbCategories : fallbackCategories as PlantCategory[]);
+        
         setHasLoadedGardens(true);
-      }),
-      subscribeToAreas(undefined, (data) => {
-        setAreas(data.length > 0 ? data : fallbackAreas as GardenArea[]);
         setHasLoadedAreas(true);
-      }),
-      subscribeToMarkers(undefined, (data) => {
-        setMarkers(data);
-      }),
-      subscribeToPlants((data) => setPlants(data)),
-      subscribeToCategories((data) => setCategories(data.length > 0 ? data : fallbackCategories as PlantCategory[])),
-    ];
-
-    const timer = setTimeout(() => {
-      setMarkers(prev => prev.length > 0 ? prev : fallbackMarkers);
-      setPlants(prev => prev.length > 0 ? prev : fallbackPlants as Plant[]);
-      setIsLoading(false);
-    }, 2000);
-
-    return () => {
-      unsubs.forEach(unsub => unsub());
-      clearTimeout(timer);
-    };
-  }, []);
+      } catch (error: any) {
+        console.error('Error loading area details:', error);
+        // Fallbacks
+        setGardens(fallbackGardens as Garden[]);
+        setAreas(fallbackAreas as GardenArea[]);
+        setMarkers(fallbackMarkers);
+        setPlants(fallbackPlants as Plant[]);
+        setCategories(fallbackCategories as PlantCategory[]);
+        
+        if (error?.message?.includes('Quota limit exceeded')) {
+          toast.error('Botanical database busy', {
+            description: 'Showing offline area records. Some details might be outdated.'
+          });
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, [gardenId, areaId]);
 
   useEffect(() => {
     if (hasLoadedAreas && hasLoadedGardens) {

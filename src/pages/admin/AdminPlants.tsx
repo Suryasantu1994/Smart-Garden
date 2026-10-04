@@ -43,26 +43,28 @@ export default function AdminPlants() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Subscribe to Firestore updates
-    const unsubs = [
-      subscribeToPlants((updatedPlants) => {
-        setPlants(updatedPlants);
-        if (categories.length > 0) setIsLoading(false);
-      }),
-      subscribeToCategories((updatedCategories) => {
-        setCategories(updatedCategories.length > 0 ? updatedCategories : localCategories as PlantCategory[]);
-        if (plants.length > 0) setIsLoading(false);
-      })
-    ];
+    
+    // Subscribe to Categories
+    const unsubCategories = subscribeToCategories((updatedCategories) => {
+      const cats = updatedCategories.length > 0 ? updatedCategories : localCategories as PlantCategory[];
+      setCategories(cats);
+    });
 
-    // Fallback timer
-    const timer = setTimeout(() => setIsLoading(false), 2000);
+    // Subscribe to Plants
+    const unsubPlants = subscribeToPlants((updatedPlants) => {
+      setPlants(updatedPlants);
+      setIsLoading(false);
+    });
+
+    // Fallback timer to stop loading if database is empty/slow
+    const timer = setTimeout(() => setIsLoading(false), 3000);
 
     return () => {
-      unsubs.forEach(unsub => unsub());
+      unsubCategories();
+      unsubPlants();
       clearTimeout(timer);
     };
-  }, [plants.length, categories.length]);
+  }, []); // Only subscribe once on mount
 
   const handleSeedData = async () => {
     setIsSeeding(true);
