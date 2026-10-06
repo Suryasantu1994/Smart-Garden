@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -17,7 +17,11 @@ import {
   Activity,
   Clock,
   User,
-  Loader2
+  Loader2,
+  X,
+  Smartphone,
+  MapPin,
+  Leaf
 } from 'lucide-react';
 import {
   AreaChart,
@@ -43,6 +47,7 @@ import { Plant, PlantCategory, GardenArea } from '../../types';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [showScanDetails, setShowScanDetails] = useState(false);
   const [gardens, setGardens] = useState<any[]>([]);
   const [areas, setAreas] = useState<GardenArea[]>([]);
   const [plants, setPlants] = useState<Plant[]>([]);
@@ -65,6 +70,24 @@ export default function AdminDashboard() {
       clearTimeout(timer);
     };
   }, []);
+
+  // Process scans for display in modal
+  const detailedScans = scans.map(scan => {
+    const plant = plants.find(p => p.id === scan.plantId);
+    const area = areas.find(a => a.id === scan.areaId);
+    return {
+      ...scan,
+      itemName: plant ? plant.commonName : (area ? area.name : 'Unknown Item'),
+      itemType: scan.type === 'plant' ? 'Plant' : 'Area',
+      formattedDate: scan.timestamp ? new Date(scan.timestamp).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : 'N/A'
+    };
+  });
 
   // Calculate KPIs
   const kpis = [
@@ -165,7 +188,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            onClick={() => handleKpiClick(kpi.path)}
+            onClick={() => kpi.label === 'QR Scans' ? setShowScanDetails(true) : handleKpiClick(kpi.path)}
             className="bg-white p-6 rounded-3xl shadow-sm border border-stone-100 group hover:border-emerald-200 transition-all cursor-pointer active:scale-95"
           >
             <div className="flex justify-between items-start mb-4">
@@ -184,6 +207,101 @@ export default function AdminDashboard() {
           </motion.div>
         ))}
       </div>
+
+      <AnimatePresence>
+        {showScanDetails && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowScanDetails(false)}
+              className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-4xl max-h-[85vh] bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="p-8 border-b border-stone-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center">
+                    <QrCode size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-stone-900 tracking-tight">Recent Scan Logs</h2>
+                    <p className="text-stone-500 text-sm">Real-time engagement tracking across the gardens.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowScanDetails(false)}
+                  className="p-3 hover:bg-stone-100 rounded-2xl text-stone-400 hover:text-stone-900 transition-all active:scale-90"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-grow overflow-y-auto p-8 custom-scrollbar">
+                {detailedScans.length === 0 ? (
+                  <div className="py-20 text-center">
+                    <QrCode size={48} className="mx-auto text-stone-200 mb-4" />
+                    <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">No scans recorded yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {detailedScans.map((scan, idx) => (
+                      <motion.div
+                        key={scan.id || idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="flex items-center justify-between p-6 bg-stone-50/50 rounded-3xl border border-stone-100 hover:bg-white hover:shadow-xl hover:shadow-stone-900/5 transition-all"
+                      >
+                        <div className="flex items-center space-x-5">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${scan.itemType === 'Plant' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
+                            {scan.itemType === 'Plant' ? <Leaf size={20} /> : <MapPin size={20} />}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-stone-900">{scan.itemName}</h4>
+                            <div className="flex items-center space-x-3 mt-1">
+                              <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${scan.itemType === 'Plant' ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'}`}>
+                                {scan.itemType}
+                              </span>
+                              <div className="flex items-center space-x-1 text-stone-400">
+                                <Clock size={12} />
+                                <span className="text-[11px] font-medium">{scan.formattedDate}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="hidden md:flex items-center space-x-2 text-stone-400 bg-white px-4 py-2 rounded-xl border border-stone-100 shadow-sm">
+                          <Smartphone size={14} />
+                          <span className="text-[10px] font-bold uppercase tracking-widest truncate max-w-[120px]">
+                            {scan.userAgent?.split(' ')[0] || 'Mobile Device'}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-8 border-t border-stone-100 bg-stone-50/50 flex justify-end shrink-0">
+                <button
+                  onClick={() => setShowScanDetails(false)}
+                  className="px-8 py-3 bg-stone-900 text-white rounded-2xl font-bold active:scale-95 transition-all"
+                >
+                  Close Records
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
