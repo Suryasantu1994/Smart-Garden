@@ -66,12 +66,13 @@ function notifyLocalListeners(key: string, data: any) {
 const CACHE_TTL = 3600000; // 1 hour for persistent cache
 const QUOTA_COOLDOWN = 3600000; // 1 hour circuit breaker
 
-function getCachedData<T>(key: string): T | null {
+function getCachedData<T>(key: string, ignoreTTL: boolean = false): T | null {
   try {
     const cached = localStorage.getItem(`botanical_cache_${key}`);
     if (cached) {
       const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_TTL) {
+      // If quota is exceeded, we prefer stale data over placeholder data
+      if (ignoreTTL || Date.now() - timestamp < CACHE_TTL) {
         return data as T;
       }
     }
@@ -157,9 +158,10 @@ export async function recordScan(id: string, type: 'plant' | 'area'): Promise<vo
 
 export async function getPlants(): Promise<Plant[]> {
   const cacheKey = 'plants_all';
-  const cached = getCachedData<Plant[]>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<Plant[]>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     return cached || (fallbackPlants as Plant[]);
   }
 
@@ -171,22 +173,24 @@ export async function getPlants(): Promise<Plant[]> {
     return plants;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.PLANTS);
     }
-    return cached || (fallbackPlants as Plant[]);
+    return getCachedData<Plant[]>(cacheKey, true) || (fallbackPlants as Plant[]);
   }
 }
 
 export function subscribeToPlants(callback: (plants: Plant[]) => void) {
   // Use cached data immediately if available
-  const cached = getCachedData<Plant[]>('plants_all');
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<Plant[]>('plants_all', isQuotaExceeded);
   if (cached) callback(cached);
 
   // Register for local updates even if quota is exceeded
   localListeners['plants_all'].add(callback);
 
-  if (getQuotaState()) return () => {
+  if (isQuotaExceeded) return () => {
     localListeners['plants_all'].delete(callback);
   };
 
@@ -250,6 +254,7 @@ export async function savePlant(plant: Partial<Plant>): Promise<string> {
 
     return savedId;
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.WRITE, collections.PLANTS);
     return '';
   }
@@ -261,15 +266,17 @@ export async function deletePlant(id: string): Promise<void> {
     clearCachedData(`plant_${id}`);
     await deleteDoc(doc(db, collections.PLANTS, id));
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.DELETE, `${collections.PLANTS}/${id}`);
   }
 }
 
 export async function getCategories(): Promise<PlantCategory[]> {
   const cacheKey = 'categories_all';
-  const cached = getCachedData<PlantCategory[]>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<PlantCategory[]>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     return cached || (fallbackCategories as PlantCategory[]);
   }
 
@@ -281,20 +288,22 @@ export async function getCategories(): Promise<PlantCategory[]> {
     return categories;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.CATEGORIES);
     }
-    return cached || (fallbackCategories as PlantCategory[]);
+    return getCachedData<PlantCategory[]>(cacheKey, true) || (fallbackCategories as PlantCategory[]);
   }
 }
 
 export function subscribeToCategories(callback: (categories: PlantCategory[]) => void) {
-  const cached = getCachedData<PlantCategory[]>('categories_all');
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<PlantCategory[]>('categories_all', isQuotaExceeded);
   if (cached) callback(cached);
 
   localListeners['categories_all'].add(callback);
 
-  if (getQuotaState()) return () => {
+  if (isQuotaExceeded) return () => {
     localListeners['categories_all'].delete(callback);
   };
 
@@ -355,6 +364,7 @@ export async function saveCategory(category: Partial<PlantCategory>): Promise<st
 
     return savedId;
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.WRITE, collections.CATEGORIES);
     return '';
   }
@@ -365,15 +375,17 @@ export async function deleteCategory(id: string): Promise<void> {
     clearCachedData('categories_all');
     await deleteDoc(doc(db, collections.CATEGORIES, id));
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.DELETE, `${collections.CATEGORIES}/${id}`);
   }
 }
 
 export async function getGardens(): Promise<any[]> {
   const cacheKey = 'gardens_all';
-  const cached = getCachedData<any[]>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<any[]>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     return cached || fallbackGardens;
   }
 
@@ -386,18 +398,20 @@ export async function getGardens(): Promise<any[]> {
     return sortedGardens;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.GARDENS);
     }
-    return cached || fallbackGardens;
+    return getCachedData<any[]>(cacheKey, true) || fallbackGardens;
   }
 }
 
 export async function getAreas(gardenId?: string): Promise<GardenArea[]> {
   const cacheKey = `areas_${gardenId || 'all'}`;
-  const cached = getCachedData<GardenArea[]>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<GardenArea[]>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     const fallback = gardenId 
       ? (fallbackAreas as GardenArea[]).filter(a => a.gardenId === gardenId)
       : (fallbackAreas as GardenArea[]);
@@ -419,13 +433,14 @@ export async function getAreas(gardenId?: string): Promise<GardenArea[]> {
     return areas;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.AREAS);
     }
     const fallback = gardenId 
       ? (fallbackAreas as GardenArea[]).filter(a => a.gardenId === gardenId)
       : (fallbackAreas as GardenArea[]);
-    return cached || fallback;
+    return getCachedData<GardenArea[]>(cacheKey, true) || fallback;
   }
 }
 
@@ -435,7 +450,11 @@ export function subscribeToAreas(gardenId: string | undefined, callback: (areas:
   
   localListeners[key].add(callback);
 
-  if (getQuotaState()) return () => {
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<GardenArea[]>(key, isQuotaExceeded);
+  if (cached) callback(cached);
+
+  if (isQuotaExceeded) return () => {
     localListeners[key].delete(callback);
   };
 
@@ -509,6 +528,7 @@ export async function saveArea(area: any): Promise<string> {
 
     return savedId;
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.WRITE, collections.AREAS);
     return '';
   }
@@ -520,15 +540,17 @@ export async function deleteArea(id: string): Promise<void> {
     clearCachedData(`area_${id}`);
     await deleteDoc(doc(db, collections.AREAS, id));
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.DELETE, `${collections.AREAS}/${id}`);
   }
 }
 
 export async function getPlantById(id: string): Promise<Plant | null> {
   const cacheKey = `plant_${id}`;
-  const cached = getCachedData<Plant>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<Plant>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     return cached || (fallbackPlants.find(p => p.id === id) as Plant) || null;
   }
 
@@ -543,18 +565,20 @@ export async function getPlantById(id: string): Promise<Plant | null> {
     return cached || (fallbackPlants.find(p => p.id === id) as Plant) || null;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, `${collections.PLANTS}/${id}`);
     }
-    return cached || (fallbackPlants.find(p => p.id === id) as Plant) || null;
+    return getCachedData<Plant>(cacheKey, true) || (fallbackPlants.find(p => p.id === id) as Plant) || null;
   }
 }
 
 export async function getGardenById(id: string): Promise<any | null> {
   const cacheKey = `garden_${id}`;
-  const cached = getCachedData<any>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<any>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     return cached || fallbackGardens.find(g => g.id === id) || null;
   }
 
@@ -569,20 +593,22 @@ export async function getGardenById(id: string): Promise<any | null> {
     return cached || fallbackGardens.find(g => g.id === id) || null;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, `${collections.GARDENS}/${id}`);
     }
-    return cached || fallbackGardens.find(g => g.id === id) || null;
+    return getCachedData<any>(cacheKey, true) || fallbackGardens.find(g => g.id === id) || null;
   }
 }
 
 export function subscribeToGardens(callback: (gardens: any[]) => void) {
-  const cached = getCachedData<any[]>('gardens_all');
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<any[]>('gardens_all', isQuotaExceeded);
   if (cached) callback(cached);
 
   localListeners['gardens_all'].add(callback);
 
-  if (getQuotaState()) return () => {
+  if (isQuotaExceeded) return () => {
     localListeners['gardens_all'].delete(callback);
   };
 
@@ -641,6 +667,7 @@ export async function saveGarden(garden: any): Promise<string> {
 
     return savedId;
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.WRITE, collections.GARDENS);
     return '';
   }
@@ -652,6 +679,7 @@ export async function deleteGarden(id: string): Promise<void> {
     clearCachedData(`garden_${id}`);
     await deleteDoc(doc(db, collections.GARDENS, id));
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.DELETE, `${collections.GARDENS}/${id}`);
   }
 }
@@ -672,6 +700,7 @@ export async function saveMarker(marker: Partial<PlantMarker>): Promise<string> 
       return newId;
     }
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.WRITE, collections.MARKERS);
     return '';
   }
@@ -681,15 +710,17 @@ export async function deleteMarker(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, collections.MARKERS, id));
   } catch (error) {
+    handleQuotaError(error);
     handleFirestoreError(error, OperationType.DELETE, `${collections.MARKERS}/${id}`);
   }
 }
 
 export async function getAreaById(id: string): Promise<any | null> {
   const cacheKey = `area_${id}`;
-  const cached = getCachedData<any>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<any>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     return cached || fallbackAreas.find(a => a.id === id) || null;
   }
 
@@ -704,18 +735,20 @@ export async function getAreaById(id: string): Promise<any | null> {
     return cached || fallbackAreas.find(a => a.id === id) || null;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, `${collections.AREAS}/${id}`);
     }
-    return cached || fallbackAreas.find(a => a.id === id) || null;
+    return getCachedData<any>(cacheKey, true) || fallbackAreas.find(a => a.id === id) || null;
   }
 }
 
 export async function getMarkers(areaId?: string): Promise<PlantMarker[]> {
   const cacheKey = `markers_${areaId || 'all'}`;
-  const cached = getCachedData<PlantMarker[]>(cacheKey);
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<PlantMarker[]>(cacheKey, isQuotaExceeded);
   
-  if (getQuotaState()) {
+  if (isQuotaExceeded) {
     const fallback = areaId
       ? (fallbackMarkers as PlantMarker[]).filter(m => m.areaId === areaId)
       : (fallbackMarkers as PlantMarker[]);
@@ -734,13 +767,14 @@ export async function getMarkers(areaId?: string): Promise<PlantMarker[]> {
     return markers;
   } catch (error) {
     handleQuotaError(error);
-    if (!getQuotaState()) {
+    const quotaNow = getQuotaState();
+    if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.MARKERS);
     }
     const fallback = areaId
       ? (fallbackMarkers as PlantMarker[]).filter(m => m.areaId === areaId)
       : (fallbackMarkers as PlantMarker[]);
-    return cached || fallback;
+    return getCachedData<PlantMarker[]>(cacheKey, true) || fallback;
   }
 }
 
@@ -749,7 +783,11 @@ export function subscribeToMarkers(areaId: string | undefined, callback: (marker
   if (!localListeners[key]) localListeners[key] = new Set();
   localListeners[key].add(callback);
 
-  if (getQuotaState()) return () => {
+  const isQuotaExceeded = getQuotaState();
+  const cached = getCachedData<PlantMarker[]>(key, isQuotaExceeded);
+  if (cached) callback(cached);
+
+  if (isQuotaExceeded) return () => {
     localListeners[key].delete(callback);
   };
 

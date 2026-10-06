@@ -49,6 +49,7 @@ import { Plant, PlantCategory, GardenArea } from '../../types';
 export default function AdminAnalytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [showScanDetails, setShowScanDetails] = useState(false);
+  const [showVisitorDetails, setShowVisitorDetails] = useState(false);
   const [gardens, setGardens] = useState<any[]>([]);
   const [areas, setAreas] = useState<GardenArea[]>([]);
   const [plants, setPlants] = useState<Plant[]>([]);
@@ -84,6 +85,24 @@ export default function AdminAnalytics() {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : 'N/A'
+    };
+  });
+
+  // Group scans by visitor (User Agent proxy)
+  const visitors = Array.from(new Set(scans.map(s => (s.userAgent as string) || 'Unknown Device'))).map((ua: string) => {
+    const visitorScans = scans.filter(s => (s.userAgent || 'Unknown Device') === ua);
+    const lastScan = visitorScans[0]; // Assuming descending order
+    return {
+      id: ua,
+      device: ua.split(' ')[0] || 'Mobile Device',
+      fullUA: ua,
+      scanCount: visitorScans.length,
+      lastActive: lastScan?.timestamp ? new Date(lastScan.timestamp).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
         hour: '2-digit',
         minute: '2-digit'
       }) : 'N/A'
@@ -139,6 +158,17 @@ export default function AdminAnalytics() {
     };
   }).sort((a, b) => b.scans - a.scans).slice(0, 5);
 
+  // Popular Plants
+  const popularPlants = plants.map(plant => {
+    const plantScans = scans.filter(s => s.plantId === plant.id).length;
+    return {
+      name: plant.commonName,
+      scans: plantScans,
+      botanical: plant.botanicalName,
+      image: plant.primaryImage
+    };
+  }).sort((a, b) => b.scans - a.scans).slice(0, 5);
+
   if (isLoading) {
     return (
       <div className="h-[calc(100vh-120px)] flex flex-col items-center justify-center space-y-4">
@@ -149,8 +179,8 @@ export default function AdminAnalytics() {
   }
 
   const kpis = [
-    { label: 'Total Scans', value: scans.length.toString(), change: 'Live', icon: QrCode, color: 'text-emerald-600', bg: 'bg-emerald-50', onClick: () => setShowScanDetails(true) },
-    { label: 'Unique Visitors (Est)', value: Math.ceil(scans.length * 0.85).toString(), change: 'Live', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', path: '/admin/analytics' },
+    { label: 'Total Scans', value: scans.length.toString(), change: 'View Logs', icon: QrCode, color: 'text-emerald-600', bg: 'bg-emerald-50', onClick: () => setShowScanDetails(true) },
+    { label: 'Unique Visitors (Est)', value: visitors.length.toString(), change: 'View Logs', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', onClick: () => setShowVisitorDetails(true) },
     { label: 'Plants Monitored', value: plants.length.toString(), change: 'Live', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50', path: '/admin/plants' },
   ];
 
@@ -300,6 +330,101 @@ export default function AdminAnalytics() {
             </motion.div>
           </div>
         )}
+
+        {/* Visitor Logs Modal */}
+        {showVisitorDetails && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowVisitorDetails(false)}
+              className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-4xl max-h-[85vh] bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="p-8 border-b border-stone-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                    <Users size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-stone-900 tracking-tight">Active Visitors</h2>
+                    <p className="text-stone-500 text-sm">Identifying unique browser sessions exploring your gardens.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowVisitorDetails(false)}
+                  className="p-3 hover:bg-stone-100 rounded-2xl text-stone-400 hover:text-stone-900 transition-all active:scale-90"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-grow overflow-y-auto p-8 custom-scrollbar">
+                {visitors.length === 0 ? (
+                  <div className="py-20 text-center">
+                    <Users size={48} className="mx-auto text-stone-200 mb-4" />
+                    <p className="text-stone-400 font-bold uppercase tracking-widest text-xs">No visitors detected yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {visitors.map((visitor, idx) => (
+                      <motion.div
+                        key={visitor.id || idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="flex items-center justify-between p-6 bg-stone-50/50 rounded-3xl border border-stone-100 hover:bg-white hover:shadow-xl hover:shadow-stone-900/5 transition-all"
+                      >
+                        <div className="flex items-center space-x-5">
+                          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-stone-100">
+                            <Smartphone size={20} />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-stone-900 truncate max-w-[200px] md:max-w-md" title={visitor.fullUA}>
+                              {visitor.device} User
+                            </h4>
+                            <div className="flex items-center space-x-3 mt-1">
+                              <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-stone-900 text-white">
+                                {visitor.scanCount} Scans
+                              </span>
+                              <div className="flex items-center space-x-1 text-stone-400">
+                                <Clock size={12} />
+                                <span className="text-[11px] font-medium">Last active: {visitor.lastActive}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="hidden md:block">
+                           <div className="text-[10px] text-stone-300 font-mono bg-stone-100/50 p-2 rounded-lg max-w-[150px] truncate">
+                              {visitor.id}
+                           </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-8 border-t border-stone-100 bg-stone-50/50 flex justify-end shrink-0">
+                <button
+                  onClick={() => setShowVisitorDetails(false)}
+                  className="px-8 py-3 bg-stone-900 text-white rounded-2xl font-bold active:scale-95 transition-all"
+                >
+                  Close Records
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -358,10 +483,13 @@ export default function AdminAnalytics() {
             </ResponsiveContainer>
           </div>
         </motion.div>
+      </div>
 
+      {/* Secondary Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Categories Distribution */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm"
         >
@@ -398,6 +526,37 @@ export default function AdminAnalytics() {
                 </div>
               ))}
             </div>
+          </div>
+        </motion.div>
+
+        {/* Most Scanned Plants */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm overflow-hidden"
+        >
+          <h3 className="text-xl font-bold text-stone-900 mb-8">Most Scanned Plants</h3>
+          <div className="space-y-6">
+            {popularPlants.map((plant, idx) => (
+              <div key={idx} className="flex items-center justify-between group cursor-pointer">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm group-hover:scale-110 transition-transform">
+                    <img src={plant.image} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-stone-900 group-hover:text-emerald-600 transition-colors">{plant.name}</h4>
+                    <p className="text-[10px] italic text-stone-400">{plant.botanical}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-black text-stone-900">{plant.scans}</div>
+                  <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Scans</div>
+                </div>
+              </div>
+            ))}
+            {popularPlants.length === 0 && (
+              <div className="py-12 text-center text-stone-400 text-sm italic">No plant data available.</div>
+            )}
           </div>
         </motion.div>
       </div>
