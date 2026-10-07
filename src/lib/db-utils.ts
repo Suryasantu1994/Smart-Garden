@@ -7,6 +7,8 @@ import {
   collection, 
   getDocs, 
   getDoc,
+  getDocsFromCache,
+  getDocFromCache,
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -17,7 +19,8 @@ import {
   onSnapshot,
   Timestamp,
   where,
-  QueryConstraint
+  QueryConstraint,
+  limit
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
 import { Plant, PlantCategory, Garden, GardenArea, PlantMarker } from '../types';
@@ -137,13 +140,14 @@ export const collections = {
 };
 
 export function subscribeToScans(callback: (scans: any[]) => void) {
-  const q = query(collection(db, collections.SCANS), orderBy('timestamp', 'desc'));
+  // Limit to last 100 scans to save quota
+  const q = query(collection(db, collections.SCANS), orderBy('timestamp', 'desc'), limit(100));
   return onSnapshot(q, (snapshot) => {
     const scans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(scans);
   }, (error) => {
     // Handle error silently or log it - scans might not exist yet
-    console.warn('Scans collection might be empty or missing:', error);
+    console.warn('Scans subscription error:', error);
   });
 }
 
@@ -178,6 +182,19 @@ export async function getPlants(): Promise<Plant[]> {
   } catch (error) {
     handleQuotaError(error);
     const quotaNow = getQuotaState();
+    
+    // Attempt to get from Firestore persistence cache if online fetch failed
+    try {
+      const q = query(collection(db, collections.PLANTS), orderBy('createdAt', 'desc'));
+      const cacheSnapshot = await getDocsFromCache(q);
+      if (!cacheSnapshot.empty) {
+        const cachePlants = cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Plant));
+        return cachePlants;
+      }
+    } catch (cacheErr) {
+      console.warn('Firestore cache fetch failed:', cacheErr);
+    }
+
     if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.PLANTS);
     }
@@ -293,6 +310,17 @@ export async function getCategories(): Promise<PlantCategory[]> {
   } catch (error) {
     handleQuotaError(error);
     const quotaNow = getQuotaState();
+
+    try {
+      const q = query(collection(db, collections.CATEGORIES), orderBy('name', 'asc'));
+      const cacheSnapshot = await getDocsFromCache(q);
+      if (!cacheSnapshot.empty) {
+        return cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlantCategory));
+      }
+    } catch (cacheErr) {
+      console.warn('Firestore cache fetch failed:', cacheErr);
+    }
+
     if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.CATEGORIES);
     }
@@ -403,6 +431,18 @@ export async function getGardens(): Promise<any[]> {
   } catch (error) {
     handleQuotaError(error);
     const quotaNow = getQuotaState();
+
+    try {
+      const q = query(collection(db, collections.GARDENS));
+      const cacheSnapshot = await getDocsFromCache(q);
+      if (!cacheSnapshot.empty) {
+        const cacheGardens = cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        return cacheGardens.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      }
+    } catch (cacheErr) {
+      console.warn('Firestore cache fetch failed:', cacheErr);
+    }
+
     if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.GARDENS);
     }
@@ -438,6 +478,22 @@ export async function getAreas(gardenId?: string): Promise<GardenArea[]> {
   } catch (error) {
     handleQuotaError(error);
     const quotaNow = getQuotaState();
+
+    try {
+      const constraints: QueryConstraint[] = [];
+      if (gardenId) {
+        constraints.push(where('gardenId', '==', gardenId));
+      }
+      const q = query(collection(db, collections.AREAS), ...constraints);
+      const cacheSnapshot = await getDocsFromCache(q);
+      if (!cacheSnapshot.empty) {
+        const cacheAreas = cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GardenArea));
+        return cacheAreas.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      }
+    } catch (cacheErr) {
+      console.warn('Firestore cache fetch failed:', cacheErr);
+    }
+
     if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, collections.AREAS);
     }
@@ -570,6 +626,17 @@ export async function getPlantById(id: string): Promise<Plant | null> {
   } catch (error) {
     handleQuotaError(error);
     const quotaNow = getQuotaState();
+
+    try {
+      const docRef = doc(db, collections.PLANTS, id);
+      const cacheSnap = await getDocFromCache(docRef);
+      if (cacheSnap.exists()) {
+        return { id: cacheSnap.id, ...cacheSnap.data() } as Plant;
+      }
+    } catch (cacheErr) {
+      console.warn('Firestore cache fetch failed:', cacheErr);
+    }
+
     if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, `${collections.PLANTS}/${id}`);
     }
@@ -598,6 +665,17 @@ export async function getGardenById(id: string): Promise<any | null> {
   } catch (error) {
     handleQuotaError(error);
     const quotaNow = getQuotaState();
+
+    try {
+      const docRef = doc(db, collections.GARDENS, id);
+      const cacheSnap = await getDocFromCache(docRef);
+      if (cacheSnap.exists()) {
+        return { id: cacheSnap.id, ...cacheSnap.data() };
+      }
+    } catch (cacheErr) {
+      console.warn('Firestore cache fetch failed:', cacheErr);
+    }
+
     if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, `${collections.GARDENS}/${id}`);
     }
@@ -740,6 +818,17 @@ export async function getAreaById(id: string): Promise<any | null> {
   } catch (error) {
     handleQuotaError(error);
     const quotaNow = getQuotaState();
+
+    try {
+      const docRef = doc(db, collections.AREAS, id);
+      const cacheSnap = await getDocFromCache(docRef);
+      if (cacheSnap.exists()) {
+        return { id: cacheSnap.id, ...cacheSnap.data() };
+      }
+    } catch (cacheErr) {
+      console.warn('Firestore cache fetch failed:', cacheErr);
+    }
+
     if (!quotaNow) {
       handleFirestoreError(error, OperationType.GET, `${collections.AREAS}/${id}`);
     }
