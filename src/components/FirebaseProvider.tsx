@@ -7,13 +7,14 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { getQuotaState } from '../lib/db-utils';
+import { getQuotaState, resetQuotaState } from '../lib/db-utils';
 
 interface FirebaseContextType {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
   quotaExceeded: boolean;
+  resetQuota: () => void;
 }
 
 const FirebaseContext = createContext<FirebaseContextType>({
@@ -21,6 +22,7 @@ const FirebaseContext = createContext<FirebaseContextType>({
   isAdmin: false,
   loading: true,
   quotaExceeded: false,
+  resetQuota: () => {},
 });
 
 export const useFirebase = () => useContext(FirebaseContext);
@@ -30,6 +32,13 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+
+  const resetQuota = () => {
+    resetQuotaState();
+    setQuotaExceeded(false);
+    // Reload page to re-trigger data fetching
+    window.location.reload();
+  };
 
   useEffect(() => {
     // Check initial quota state
@@ -76,7 +85,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <FirebaseContext.Provider value={{ user, isAdmin, loading, quotaExceeded }}>
+    <FirebaseContext.Provider value={{ user, isAdmin, loading, quotaExceeded, resetQuota }}>
       {children}
     </FirebaseContext.Provider>
   );

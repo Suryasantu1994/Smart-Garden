@@ -114,6 +114,10 @@ export function getQuotaState() {
   return false;
 }
 
+export function resetQuotaState() {
+  localStorage.removeItem('botanical_quota_exceeded');
+}
+
 function handleQuotaError(error: any) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   if (errorMessage.includes("Quota limit exceeded") || errorMessage.includes("Quota exceeded")) {
