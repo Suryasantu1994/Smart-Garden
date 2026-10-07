@@ -35,10 +35,10 @@ function QuotaBanner() {
   if (!quotaExceeded) return null;
 
   return (
-    <div className="bg-rose-600 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center space-x-3 sticky top-0 z-[1000] animate-in slide-in-from-top duration-500">
+    <div className="bg-amber-600 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center space-x-3 sticky top-0 z-[1000] animate-in slide-in-from-top duration-500">
       <AlertCircle size={16} className="shrink-0" />
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-        <span>Botanical database is currently in read-only mode due to high traffic.</span>
+        <span>Showing live local botanical records while the cloud database is busy.</span>
         
         <div className="flex items-center space-x-4">
           <button 
@@ -46,7 +46,7 @@ function QuotaBanner() {
             className="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg transition-colors border border-white/20"
           >
             <RefreshCcw size={12} />
-            <span>Retry Connection</span>
+            <span>Sync Cloud</span>
           </button>
 
           {isAdmin && (

@@ -167,10 +167,26 @@ export async function recordScan(id: string, type: 'plant' | 'area'): Promise<vo
 export async function getPlants(): Promise<Plant[]> {
   const cacheKey = 'plants_all';
   const isQuotaExceeded = getQuotaState();
-  const cached = getCachedData<Plant[]>(cacheKey, isQuotaExceeded);
   
+  // Always try to get the most "live" data possible
   if (isQuotaExceeded) {
-    return cached || (fallbackPlants as Plant[]);
+    // 1. Try Firestore persistent cache first (most reliable "live" local data)
+    try {
+      const q = query(collection(db, collections.PLANTS), orderBy('createdAt', 'desc'));
+      const cacheSnapshot = await getDocsFromCache(q);
+      if (!cacheSnapshot.empty) {
+        return cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Plant));
+      }
+    } catch (e) {
+      console.warn('Plants Firestore cache fail:', e);
+    }
+    
+    // 2. Try our localStorage cache
+    const cached = getCachedData<Plant[]>(cacheKey, true);
+    if (cached) return cached;
+    
+    // 3. Fallback to static data
+    return fallbackPlants as Plant[];
   }
 
   try {
@@ -203,17 +219,35 @@ export async function getPlants(): Promise<Plant[]> {
 }
 
 export function subscribeToPlants(callback: (plants: Plant[]) => void) {
-  // Use cached data immediately if available
   const isQuotaExceeded = getQuotaState();
+  
+  // 1. Try our localStorage cache first for immediate UI
   const cached = getCachedData<Plant[]>('plants_all', isQuotaExceeded);
   if (cached) callback(cached);
 
-  // Register for local updates even if quota is exceeded
-  localListeners['plants_all'].add(callback);
+  // 2. If quota hit, aggressively try to fetch from Firestore's persistent disk cache
+  if (isQuotaExceeded) {
+    (async () => {
+      try {
+        const q = query(collection(db, collections.PLANTS), orderBy('createdAt', 'desc'));
+        const cacheSnapshot = await getDocsFromCache(q);
+        if (!cacheSnapshot.empty) {
+          const cachePlants = cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Plant));
+          callback(cachePlants);
+        }
+      } catch (e) {
+        console.warn('Subscription cache fail:', e);
+      }
+    })();
 
-  if (isQuotaExceeded) return () => {
-    localListeners['plants_all'].delete(callback);
-  };
+    localListeners['plants_all'].add(callback);
+    return () => {
+      localListeners['plants_all'].delete(callback);
+    };
+  }
+
+  // Register for local updates
+  localListeners['plants_all'].add(callback);
 
   const q = query(collection(db, collections.PLANTS), orderBy('createdAt', 'desc'));
   const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -295,9 +329,19 @@ export async function deletePlant(id: string): Promise<void> {
 export async function getCategories(): Promise<PlantCategory[]> {
   const cacheKey = 'categories_all';
   const isQuotaExceeded = getQuotaState();
-  const cached = getCachedData<PlantCategory[]>(cacheKey, isQuotaExceeded);
   
   if (isQuotaExceeded) {
+    try {
+      const q = query(collection(db, collections.CATEGORIES), orderBy('name', 'asc'));
+      const cacheSnapshot = await getDocsFromCache(q);
+      if (!cacheSnapshot.empty) {
+        return cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlantCategory));
+      }
+    } catch (e) {
+      console.warn('Categories Firestore cache fail:', e);
+    }
+    
+    const cached = getCachedData<PlantCategory[]>(cacheKey, true);
     return cached || (fallbackCategories as PlantCategory[]);
   }
 
@@ -333,11 +377,28 @@ export function subscribeToCategories(callback: (categories: PlantCategory[]) =>
   const cached = getCachedData<PlantCategory[]>('categories_all', isQuotaExceeded);
   if (cached) callback(cached);
 
-  localListeners['categories_all'].add(callback);
+  if (isQuotaExceeded) {
+    (async () => {
+      try {
+        const q = query(collection(db, collections.CATEGORIES));
+        const cacheSnapshot = await getDocsFromCache(q);
+        if (!cacheSnapshot.empty) {
+          const cats = cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlantCategory));
+          cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+          callback(cats);
+        }
+      } catch (e) {
+        console.warn('Categories sub cache fail:', e);
+      }
+    })();
 
-  if (isQuotaExceeded) return () => {
-    localListeners['categories_all'].delete(callback);
-  };
+    localListeners['categories_all'].add(callback);
+    return () => {
+      localListeners['categories_all'].delete(callback);
+    };
+  }
+
+  localListeners['categories_all'].add(callback);
 
   const q = query(collection(db, collections.CATEGORIES));
   const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -415,9 +476,20 @@ export async function deleteCategory(id: string): Promise<void> {
 export async function getGardens(): Promise<any[]> {
   const cacheKey = 'gardens_all';
   const isQuotaExceeded = getQuotaState();
-  const cached = getCachedData<any[]>(cacheKey, isQuotaExceeded);
   
   if (isQuotaExceeded) {
+    try {
+      const q = query(collection(db, collections.GARDENS));
+      const cacheSnapshot = await getDocsFromCache(q);
+      if (!cacheSnapshot.empty) {
+        const cacheGardens = cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+        return cacheGardens.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      }
+    } catch (e) {
+      console.warn('Gardens Firestore cache fail:', e);
+    }
+    
+    const cached = getCachedData<any[]>(cacheKey, true);
     return cached || fallbackGardens;
   }
 
@@ -514,9 +586,28 @@ export function subscribeToAreas(gardenId: string | undefined, callback: (areas:
   const cached = getCachedData<GardenArea[]>(key, isQuotaExceeded);
   if (cached) callback(cached);
 
-  if (isQuotaExceeded) return () => {
-    localListeners[key].delete(callback);
-  };
+  if (isQuotaExceeded) {
+    (async () => {
+      try {
+        const constraints: QueryConstraint[] = [];
+        if (gardenId) {
+          constraints.push(where('gardenId', '==', gardenId));
+        }
+        const q = query(collection(db, collections.AREAS), ...constraints);
+        const cacheSnapshot = await getDocsFromCache(q);
+        if (!cacheSnapshot.empty) {
+          const cacheAreas = cacheSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GardenArea));
+          callback(cacheAreas.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)));
+        }
+      } catch (e) {
+        console.warn('Areas sub cache fail:', e);
+      }
+    })();
+
+    return () => {
+      localListeners[key].delete(callback);
+    };
+  }
 
   const constraints: QueryConstraint[] = [];
   if (gardenId) {
@@ -688,11 +779,29 @@ export function subscribeToGardens(callback: (gardens: any[]) => void) {
   const cached = getCachedData<any[]>('gardens_all', isQuotaExceeded);
   if (cached) callback(cached);
 
-  localListeners['gardens_all'].add(callback);
+  if (isQuotaExceeded) {
+    (async () => {
+      try {
+        const q = query(collection(db, collections.GARDENS));
+        const cacheSnapshot = await getDocsFromCache(q);
+        if (!cacheSnapshot.empty) {
+          const sorted = cacheSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0));
+          callback(sorted);
+        }
+      } catch (e) {
+        console.warn('Gardens sub cache fail:', e);
+      }
+    })();
 
-  if (isQuotaExceeded) return () => {
-    localListeners['gardens_all'].delete(callback);
-  };
+    localListeners['gardens_all'].add(callback);
+    return () => {
+      localListeners['gardens_all'].delete(callback);
+    };
+  }
+
+  localListeners['gardens_all'].add(callback);
 
   const q = query(collection(db, collections.GARDENS));
   const unsubscribe = onSnapshot(q, (snapshot) => {
