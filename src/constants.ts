@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const PUBLIC_URL = "https://smart-garden-gitam.vercel.app";
+export const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || "https://smart-garden-gitam.vercel.app";
 
 /**
  * Intelligent Domain Switching:
