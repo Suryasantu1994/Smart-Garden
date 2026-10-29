@@ -14,7 +14,9 @@ import {
   ExternalLink,
   QrCode as QrIcon,
   LayoutGrid,
-  Leaf
+  Leaf,
+  X,
+  Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -60,26 +62,30 @@ export default function AdminQRCodes() {
       
       return {
         id: `qr-${area.id}`,
+        entityId: area.id,
         title: area.name,
         subtitle: garden?.name || 'Unknown Garden',
         code: area.code,
         url: scanUrl,
         scans: areaScans,
-        createdAt: area.createdAt ? new Date(area.createdAt).toLocaleDateString() : 'N/A'
+        createdAt: area.createdAt ? new Date(area.createdAt).toLocaleDateString() : 'N/A',
+        type: 'area' as const
       };
     } else {
       const plant = item as Plant;
       const plantScans = scans.filter(s => s.plantId === plant.id).length;
-      const scanUrl = `${baseUrl}/plant/${plant.id}`;
+      const scanUrl = `${baseUrl}/plant/${plant.id}?ref=qr`;
       
       return {
         id: `qr-${plant.id}`,
+        entityId: plant.id,
         title: plant.commonName,
         subtitle: plant.scientificName || plant.botanicalName || 'Unknown Species',
         code: plant.id,
         url: scanUrl,
         scans: plantScans,
-        createdAt: plant.createdAt ? new Date(plant.createdAt).toLocaleDateString() : 'N/A'
+        createdAt: plant.createdAt ? new Date(plant.createdAt).toLocaleDateString() : 'N/A',
+        type: 'plant' as const
       };
     }
   }).filter(qr => 
@@ -87,6 +93,22 @@ export default function AdminQRCodes() {
     qr.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
     qr.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const [selectedScanLogs, setSelectedScanLogs] = useState<{ id: string, name: string, type: 'plant' | 'area' } | null>(null);
+
+  const scanLogs = selectedScanLogs ? scans.filter(s => 
+    selectedScanLogs.type === 'plant' 
+      ? s.plantId === selectedScanLogs.id 
+      : s.areaId === selectedScanLogs.id
+  ).map(s => ({
+    ...s,
+    formattedDate: s.timestamp ? new Date(s.timestamp).toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) : 'N/A'
+  })) : [];
 
   const copyToClipboard = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -299,10 +321,16 @@ export default function AdminQRCodes() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-8">
-                     <div className="bg-stone-50 p-4 rounded-2xl">
-                        <div className="text-[10px] text-stone-400 font-bold uppercase tracking-tight mb-1">Total Scans</div>
-                        <div className="text-lg font-black text-stone-900">{qr.scans}</div>
-                     </div>
+                    <div 
+                      onClick={() => setSelectedScanLogs({ id: qr.entityId, name: qr.title, type: qr.type })}
+                      className="bg-stone-50 p-4 rounded-2xl cursor-pointer hover:bg-emerald-50 transition-colors group/stats"
+                    >
+                      <div className="text-[10px] text-stone-400 font-bold uppercase tracking-tight mb-1 group-hover/stats:text-emerald-600">Total Scans</div>
+                      <div className="text-lg font-black text-stone-900 flex items-center justify-between">
+                        <span>{qr.scans}</span>
+                        <ExternalLink size={12} className="text-stone-300 group-hover/stats:text-emerald-400 transition-colors" />
+                      </div>
+                    </div>
                      <div className="bg-stone-50 p-4 rounded-2xl">
                         <div className="text-[10px] text-stone-400 font-bold uppercase tracking-tight mb-1">Created</div>
                         <div className="text-xs font-bold text-stone-900">{qr.createdAt}</div>
@@ -337,6 +365,59 @@ export default function AdminQRCodes() {
             </div>
           )}
         </motion.div>
+      </AnimatePresence>
+      <AnimatePresence>
+        {selectedScanLogs && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedScanLogs(null)}
+              className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[70vh]"
+            >
+              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-stone-900 tracking-tight">Scan History</h3>
+                  <p className="text-xs text-stone-500 mt-1">{selectedScanLogs.name}</p>
+                </div>
+                <button onClick={() => setSelectedScanLogs(null)} className="p-2 hover:bg-stone-100 rounded-xl text-stone-400">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto flex-grow space-y-3">
+                {scanLogs.length === 0 ? (
+                  <div className="text-center py-10">
+                    <QrIcon size={32} className="mx-auto text-stone-200 mb-2" />
+                    <p className="text-stone-400 text-xs font-bold uppercase">No recent scans found</p>
+                    <p className="text-[10px] text-stone-300 mt-1">Showing last 500 global scans only</p>
+                  </div>
+                ) : (
+                  scanLogs.map((log, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-stone-400 shadow-sm">
+                          <Smartphone size={14} />
+                        </div>
+                        <div className="text-[11px] font-bold text-stone-700 truncate max-w-[150px]">
+                          {log.userAgent?.split(' ')[0] || 'Unknown Device'}
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-medium text-stone-400">{log.formattedDate}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </div>
   );

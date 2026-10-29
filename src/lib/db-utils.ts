@@ -140,8 +140,8 @@ export const collections = {
 };
 
 export function subscribeToScans(callback: (scans: any[]) => void) {
-  // Limit to last 100 scans to save quota
-  const q = query(collection(db, collections.SCANS), orderBy('timestamp', 'desc'), limit(100));
+  // Limit to last 500 scans to provide better coverage for the dashboard
+  const q = query(collection(db, collections.SCANS), orderBy('timestamp', 'desc'), limit(500));
   return onSnapshot(q, (snapshot) => {
     const scans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(scans);
